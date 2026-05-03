@@ -65,8 +65,8 @@ export default function Home() {
     const sevenDaysAgoStr = sevenDaysAgo.toISOString()
 
     const [{ data: newsData }, { data: streamData }, { data: postData }] = await Promise.all([
-      supabase.from('news').select('*').gte('published_at', sevenDaysAgoStr).order('published_at', { ascending: false }).limit(500),
-      supabase.from('streams').select('*').gte('started_at', sevenDaysAgoStr).order('started_at', { ascending: false }).limit(300),
+      supabase.from('news').select('*').gte('collected_at', sevenDaysAgoStr).order('published_at', { ascending: false }).limit(500),
+      supabase.from('streams').select('*').gte('collected_at', sevenDaysAgoStr).order('started_at', { ascending: false }).limit(300),
       supabase.from('community_posts').select('*').gte('collected_at', sevenDaysAgoStr).order('collected_at', { ascending: false }).limit(1000),
     ])
     setNews(newsData || [])
