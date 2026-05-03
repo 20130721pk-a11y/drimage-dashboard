@@ -147,7 +147,7 @@ export default function Home() {
                 <h2 className="text-sm font-semibold text-gray-400 mb-4">카테고리 비율</h2>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={categoryCount} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, value }) => `${name} ${value}`} onClick={(d) => handleClick(d.name)} style={{ cursor: 'pointer' }}>
+                    <Pie data={categoryCount} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, value }) => `${name} ${value}`} onClick={(d: any) => handleClick(d.name)} style={{ cursor: 'pointer' }}>
                       {categoryCount.map((entry) => <Cell key={entry.name} fill={COLORS[entry.name]} />)}
                     </Pie>
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
