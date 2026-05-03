@@ -143,7 +143,7 @@ export default function Home() {
                     <div key={cat}>
                       <p className="text-xs font-semibold mb-1" style={{ color: COLORS[cat] }}>{CAT_LABELS[cat]} {cat}</p>
                       <ResponsiveContainer width="100%" height={data.length * 28}>
-                        <BarChart data={data} layout="vertical" onClick={(d) => { if (d?.activeLabel) handleClick(cat, d.activeLabel) }}>
+                        <BarChart data={data} layout="vertical" onClick={(d: any) => { if (d?.activeLabel) handleClick(cat, d.activeLabel) }}>
                           <XAxis type="number" hide />
                           <YAxis type="category" dataKey="name" width={90} tick={{ fill: '#9ca3af', fontSize: 11 }} />
                           <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
