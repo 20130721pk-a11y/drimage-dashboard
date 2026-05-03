@@ -60,10 +60,14 @@ export default function Home() {
 
   async function fetchAll() {
     setLoading(true)
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString()
+
     const [{ data: newsData }, { data: streamData }, { data: postData }] = await Promise.all([
-      supabase.from('news').select('*').order('published_at', { ascending: false }).limit(500),
-      supabase.from('streams').select('*').order('started_at', { ascending: false }).limit(300),
-      supabase.from('community_posts').select('*').order('collected_at', { ascending: false }).limit(1000),
+      supabase.from('news').select('*').gte('published_at', sevenDaysAgoStr).order('published_at', { ascending: false }).limit(500),
+      supabase.from('streams').select('*').gte('started_at', sevenDaysAgoStr).order('started_at', { ascending: false }).limit(300),
+      supabase.from('community_posts').select('*').gte('collected_at', sevenDaysAgoStr).order('collected_at', { ascending: false }).limit(1000),
     ])
     setNews(newsData || [])
     setStreams(streamData || [])
@@ -477,7 +481,7 @@ export default function Home() {
                       <h2 className="text-white font-medium leading-snug mb-1">{item.title}</h2>
                       {item.sentiment_reason && <p className="text-gray-500 text-xs">분석: {item.sentiment_reason}</p>}
                     </div>
-                    <div className="text-xs text-gray-500 whitespace-nowrap">{item.collected_at ? new Date(item.collected_at).toLocaleDateString('ko-KR') : ''}</div>
+                    <div className="text-xs text-gray-500 whitespace-nowrap">{item.posted_at ? new Date(item.posted_at).toLocaleDateString('ko-KR') : ''}</div>
                   </div>
                 </a>
               ))}
