@@ -47,6 +47,8 @@ export default function Home() {
   const [streamCategory, setStreamCategory] = useState('전체')
   const [streamPlatform, setStreamPlatform] = useState('전체')
   const [streamSearch, setStreamSearch] = useState('')
+  const [streamType, setStreamType] = useState('전체')
+  const [streamSegment, setStreamSegment] = useState('')
   const newsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { fetchAll() }, [])
@@ -81,7 +83,9 @@ export default function Home() {
     const matchCat = streamCategory === '전체' || s.category === streamCategory
     const matchPlatform = streamPlatform === '전체' || s.platform === streamPlatform
     const matchSearch = s.title?.toLowerCase().includes(streamSearch.toLowerCase()) || s.channel_name?.toLowerCase().includes(streamSearch.toLowerCase())
-    return matchCat && matchPlatform && matchSearch
+    const matchType = streamType === '전체' || (streamType === '생방송' && s.is_live) || (streamType === 'VOD' && !s.is_live)
+    const matchSeg = !streamSegment || s.tags?.includes(streamSegment) || s.title?.includes(streamSegment)
+    return matchCat && matchPlatform && matchSearch && matchType && matchSeg
   })
 
   const categoryCount = ['자사', '경쟁사', '업계'].map(cat => ({
@@ -276,14 +280,30 @@ export default function Home() {
             </div>
 
             <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700 mb-6">
-              <div className="flex gap-2 mb-4 flex-wrap">
+              <div className="flex gap-2 mb-3 flex-wrap">
+                <span className="text-xs text-gray-500 self-center">카테고리</span>
                 {['전체', '자사', '경쟁사', '업계'].map(cat => (
-                  <button key={cat} onClick={() => setStreamCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${streamCategory === cat ? 'bg-white text-gray-900' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>{cat}</button>
+                  <button key={cat} onClick={() => { setStreamCategory(cat); setStreamSegment('') }} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${streamCategory === cat && !streamSegment ? 'bg-white text-gray-900' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>{cat}</button>
+                ))}
+              </div>
+              {streamCategory !== '전체' && (
+                <div className="flex gap-2 mb-3 flex-wrap">
+                  <span className="text-xs text-gray-500 self-center">세그먼트</span>
+                  {SEGMENTS[streamCategory]?.map(seg => (
+                    <button key={seg} onClick={() => setStreamSegment(seg === streamSegment ? '' : seg)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${streamSegment === seg ? 'text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`} style={streamSegment === seg ? { backgroundColor: COLORS[seg] } : {}}>{seg}</button>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2 mb-3 flex-wrap">
+                <span className="text-xs text-gray-500 self-center">플랫폼</span>
+                {['전체', '유튜브', '치지직', 'SOOP'].map(p => (
+                  <button key={p} onClick={() => setStreamPlatform(p)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${streamPlatform === p ? 'text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`} style={streamPlatform === p && p !== '전체' ? { backgroundColor: PLATFORM_COLORS[p] } : streamPlatform === p ? { backgroundColor: '#374151', color: 'white' } : {}}>{p}</button>
                 ))}
               </div>
               <div className="flex gap-2 mb-4 flex-wrap">
-                {['전체', '유튜브', '치지직', 'SOOP'].map(p => (
-                  <button key={p} onClick={() => setStreamPlatform(p)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${streamPlatform === p ? 'text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`} style={streamPlatform === p && p !== '전체' ? { backgroundColor: PLATFORM_COLORS[p] } : streamPlatform === p ? { backgroundColor: '#374151', color: 'white' } : {}}>{p}</button>
+                <span className="text-xs text-gray-500 self-center">유형</span>
+                {['전체', '생방송', 'VOD'].map(t => (
+                  <button key={t} onClick={() => setStreamType(t)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${streamType === t ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>{t === '생방송' ? '🔴 생방송' : t}</button>
                 ))}
               </div>
               <input type="text" placeholder="채널명 또는 제목 검색..." value={streamSearch} onChange={e => setStreamSearch(e.target.value)} className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg outline-none border border-gray-600 focus:border-blue-500 text-sm" />
