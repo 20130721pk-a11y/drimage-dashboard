@@ -418,7 +418,7 @@ export default function Home() {
                   ))}
 
                   {/* 7일 트렌드 - col-span-4로 확장 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  <div className="col-span-6 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">📈 7일간 카테고리별 추이</p>
                     </div>
@@ -497,7 +497,7 @@ export default function Home() {
                 {/* 시각화 섹션 - 3개로 통합 정리 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
                   {/* 키워드 워드클라우드 */}
-                  <div className="col-span-5 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">☁️ 키워드 워드클라우드</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
@@ -933,8 +933,8 @@ export default function Home() {
                     </button>
                   ))}
 
-                  {/* 7일 추이 - 더 넓게 */}
-                  <div className="col-span-6 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  {/* 7일 추이 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <p className="text-xs text-gray-500 font-medium mb-2">📈 7일간 감성 추이</p>
                     <ResponsiveContainer width="100%" height={130}>
                       <LineChart data={comm7d}>
