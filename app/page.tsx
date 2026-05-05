@@ -550,53 +550,79 @@ export default function Home() {
                   </div>
 
                   {/* 요일별 발행 패턴 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">📅 요일별 발행 패턴</p>
-                      <p className="text-xs text-gray-600">전체 누적</p>
+                      <div className="flex items-center gap-3">
+                        <p className="text-xs text-gray-600">전체 누적</p>
+                        <span className="text-xs text-indigo-400 font-medium">
+                          최다: {weekdayData.reduce((a,b)=>(a.자사+a.경쟁사+a.업계)>(b.자사+b.경쟁사+b.업계)?a:b).day}요일
+                        </span>
+                      </div>
                     </div>
                     <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={weekdayData}>
-                        <XAxis dataKey="day" tick={{fill:'#9ca3af',fontSize:11}} axisLine={false} tickLine={false}/>
-                        <YAxis hide/>
-                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                      <BarChart data={weekdayData} barCategoryGap="20%">
+                        <XAxis dataKey="day" tick={{fill:'#9ca3af',fontSize:12}} axisLine={false} tickLine={false}/>
+                        <YAxis tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false} width={25}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`${v}건`,n]}/>
                         <Bar dataKey="자사" stackId="a" fill="#6366f1"/>
                         <Bar dataKey="경쟁사" stackId="a" fill="#ef4444"/>
                         <Bar dataKey="업계" stackId="a" fill="#10b981" radius={[4,4,0,0]}/>
                       </BarChart>
                     </ResponsiveContainer>
-                    <div className="flex gap-3 mt-2">
-                      {['자사','경쟁사','업계'].map(c=><div key={c} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:COLORS[c]}}></div><span className="text-xs text-gray-500">{c}</span></div>)}
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex gap-3">
+                        {['자사','경쟁사','업계'].map(c=><div key={c} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:COLORS[c]}}></div><span className="text-xs text-gray-500">{c}</span></div>)}
+                      </div>
+                      <div className="flex gap-3 text-xs text-gray-600">
+                        {weekdayData.map(d=>(
+                          <span key={d.day} className={d.자사+d.경쟁사+d.업계===Math.max(...weekdayData.map(x=>x.자사+x.경쟁사+x.업계))?'text-indigo-400 font-medium':''}>
+                            {d.day} {d.자사+d.경쟁사+d.업계}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* 시간대별 히트맵 */}
+                  {/* 시간대별 발행량 바차트 */}
                   <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 발행량</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                      <p className="text-xs text-indigo-400 font-medium">
+                        피크 {hourlyNews.reduce((a,b)=>a.count>b.count?a:b).hour}
+                      </p>
                     </div>
-                    <div className="grid grid-cols-6 gap-1 mb-2">
-                      {hourlyNews.map(h => {
-                        const max = Math.max(...hourlyNews.map(x=>x.count), 1)
-                        const intensity = h.count / max
-                        return (
-                          <div key={h.h} className="flex flex-col items-center gap-1">
-                            <div className="w-full h-8 rounded" style={{ backgroundColor: intensity > 0 ? `rgba(99,102,241,${0.15 + intensity * 0.85})` : '#1f2937' }} title={`${h.h}시 ${h.count}건`}></div>
-                            {h.h % 4 === 0 && <span className="text-xs text-gray-600">{h.h}</span>}
-                          </div>
-                        )
-                      })}
-                    </div>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs text-gray-600">0시</span>
-                      <div className="flex gap-0.5 items-center">
-                        {[0.15,0.35,0.55,0.75,1.0].map(o => <div key={o} className="w-4 h-2 rounded-sm" style={{backgroundColor:`rgba(99,102,241,${o})`}}></div>)}
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={hourlyNews.filter(h=>h.count>0)} barCategoryGap="10%">
+                        <XAxis dataKey="hour" tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} interval={3}/>
+                        <YAxis tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} width={20}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any)=>[`${v}건`,'발행량']}/>
+                        <Bar dataKey="count" radius={[3,3,0,0]}>
+                          {hourlyNews.filter(h=>h.count>0).map(h=>{
+                            const max=Math.max(...hourlyNews.map(x=>x.count),1)
+                            const intensity=h.count/max
+                            return <Cell key={h.h} fill={`rgba(99,102,241,${0.3+intensity*0.7})`}/>
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-gray-700/50 rounded-lg p-2">
+                        <p className="text-gray-500">오전(6-12시)</p>
+                        <p className="text-white font-medium mt-0.5">{hourlyNews.filter(h=>h.h>=6&&h.h<12).reduce((a,b)=>a+b.count,0)}건</p>
                       </div>
-                      <span className="text-xs text-gray-600">23시</span>
-                    </div>
-                    <div className="mt-3 text-center">
-                      <span className="text-xs text-gray-500">피크: {hourlyNews.reduce((a,b) => a.count > b.count ? a : b).hour} ({hourlyNews.reduce((a,b) => a.count > b.count ? a : b).count}건)</span>
+                      <div className="bg-gray-700/50 rounded-lg p-2">
+                        <p className="text-gray-500">오후(12-18시)</p>
+                        <p className="text-white font-medium mt-0.5">{hourlyNews.filter(h=>h.h>=12&&h.h<18).reduce((a,b)=>a+b.count,0)}건</p>
+                      </div>
+                      <div className="bg-gray-700/50 rounded-lg p-2">
+                        <p className="text-gray-500">저녁(18-24시)</p>
+                        <p className="text-white font-medium mt-0.5">{hourlyNews.filter(h=>h.h>=18).reduce((a,b)=>a+b.count,0)}건</p>
+                      </div>
+                      <div className="bg-gray-700/50 rounded-lg p-2">
+                        <p className="text-gray-500">새벽(0-6시)</p>
+                        <p className="text-white font-medium mt-0.5">{hourlyNews.filter(h=>h.h<6).reduce((a,b)=>a+b.count,0)}건</p>
+                      </div>
                     </div>
                   </div>
                 </div>
