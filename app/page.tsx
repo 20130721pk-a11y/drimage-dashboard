@@ -163,7 +163,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-screen-2xl mx-auto px-4">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-1">업계 동향 모니터링</h1>
           <p className="text-gray-400 text-sm">게임 업계 주요 정보를 매일 자동 수집합니다</p>
@@ -301,7 +301,7 @@ export default function Home() {
               <p className="text-gray-500 text-xs mt-3">{filteredNews.length}건 표시 중</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               {filteredNews.slice(0, newsLimit).map(item => (
                 <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-500 transition-colors">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -398,7 +398,7 @@ export default function Home() {
               <p className="text-gray-500 text-xs mt-3">{filteredStreams.length}건 표시 중</p>
             </div>
 
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-5 gap-3">
               {filteredStreams.slice(0, streamLimit).map(item => (
                 <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block bg-gray-800 rounded-xl overflow-hidden border border-gray-700 hover:border-gray-500 transition-colors">
                   <div className="relative">
