@@ -222,10 +222,29 @@ export default function Home() {
   })
 
   // 키워드 빈도 분석 - filteredNews 기준 (소스명/커뮤니티명 제외)
-  const keywordFreq = newsKeywords
-    .filter(k => category === '전체' || k.category === category)
-    .slice(0, 30)
-    .map(k => ({ name: k.keyword, count: k.count, cat: k.category }))
+  // 세그먼트 선택 시 filteredNews 제목 기반으로 키워드 추출
+  const keywordFreq = (() => {
+    if (segment) {
+      // 세그먼트 선택 시 해당 뉴스 제목에서 키워드 직접 추출
+      const segNews = filteredNews
+      const freq: Record<string, number> = {}
+      segNews.forEach(n => {
+        (n.tags || []).forEach(tag => {
+          if (tag.length >= 2 && tag !== segment) {
+            freq[tag] = (freq[tag] || 0) + 1
+          }
+        })
+      })
+      return Object.entries(freq)
+        .map(([name, count]) => ({ name, count, cat: category }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 30)
+    }
+    return newsKeywords
+      .filter(k => category === '전체' || k.category === category)
+      .slice(0, 30)
+      .map(k => ({ name: k.keyword, count: k.count, cat: k.category }))
+  })()
 
   // 소스별 비중 - filteredNews 기준
   const sourceFreq = (() => {
