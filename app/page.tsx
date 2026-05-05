@@ -126,21 +126,57 @@ export default function Home() {
     return matchSentiment && matchCommunity && matchSearch && matchDate
   })
 
-  const categoryCount = ['자사', '경쟁사', '업계'].map(cat => ({
-    name: cat, value: news.filter(n => n.category === cat).length,
-    segments: SEGMENTS[cat].map(seg => ({ name: seg, value: news.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length }))
-  }))
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+  const categoryCount = ['자사', '경쟁사', '업계'].map(cat => {
+    const total = news.filter(n => n.category === cat).length
+    const todayCount = news.filter(n => n.category === cat && (n.collected_at || '').startsWith(today)).length
+    const yesterdayCount = news.filter(n => n.category === cat && (n.collected_at || '').startsWith(yesterday)).length
+    const diff = todayCount - yesterdayCount
+    return {
+      name: cat, value: total, todayCount, diff,
+      segments: SEGMENTS[cat].map(seg => ({ name: seg, value: news.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length }))
+    }
+  })
 
   const segmentsByCategory = Object.entries(SEGMENTS).map(([cat, segs]) => ({
     cat, data: segs.map(seg => ({ name: seg, value: news.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length }))
   }))
 
-  const streamPlatformCount = ['유튜브', '치지직', 'SOOP'].map(p => ({ name: p, value: streams.filter(s => s.platform === p).length }))
+  const streamPlatformCount = ['유튜브', '치지직', 'SOOP'].map(p => ({
+    name: p,
+    value: streams.filter(s => s.platform === p).length,
+    live: streams.filter(s => s.platform === p && s.is_live).length,
+    vod: streams.filter(s => s.platform === p && !s.is_live).length,
+  }))
   const streamCategoryCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat).length }))
   const liveCount = streams.filter(s => s.is_live).length
+  const hourlyData = Array.from({ length: 24 }, (_, h) => ({
+    hour: `${h}시`,
+    count: streams.filter(s => s.started_at && new Date(s.started_at).getHours() === h).length
+  })).filter(h => h.count > 0)
 
   const sentimentCount = ['긍정', '부정', '중립'].map(s => ({ name: s, value: keywordPosts.filter(p => p.sentiment === s).length }))
   const communityCount = Object.keys(COMMUNITY_COLORS).map(c => ({ name: c, value: keywordPosts.filter(p => p.community === c).length })).filter(c => c.value > 0)
+
+  const vsData = Object.entries(COMM_KEYWORDS).map(([label, kws]) => {
+    const kPosts = posts.filter(p => kws.some(kw => p.keyword === kw || p.title?.includes(kw)))
+    return {
+      name: label === '자사' ? '알케론' : '경쟁작',
+      긍정: kPosts.filter(p => p.sentiment === '긍정').length,
+      부정: kPosts.filter(p => p.sentiment === '부정').length,
+      중립: kPosts.filter(p => p.sentiment === '중립').length,
+      total: kPosts.length,
+    }
+  })
+
+  const heatmapData = Object.keys(COMMUNITY_COLORS).map(c => ({
+    community: c,
+    긍정: keywordPosts.filter(p => p.community === c && p.sentiment === '긍정').length,
+    부정: keywordPosts.filter(p => p.community === c && p.sentiment === '부정').length,
+    중립: keywordPosts.filter(p => p.community === c && p.sentiment === '중립').length,
+  })).filter(c => c.긍정 + c.부정 + c.중립 > 0)
 
   const dailyTrend = Array.from({ length: 7 }, (_, i) => {
     const date = new Date()
@@ -218,7 +254,15 @@ export default function Home() {
                 <div key={c.name} className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
                   <button onClick={() => handleClick(c.name)} className="w-full text-left mb-3 group">
                     <p className="text-gray-400 text-sm mb-1">{CAT_LABELS[c.name]} {c.name}</p>
-                    <p className="text-3xl font-bold group-hover:opacity-80 transition-opacity" style={{ color: COLORS[c.name] }}>{c.value}건</p>
+                    <div className="flex items-end gap-3">
+                      <p className="text-3xl font-bold group-hover:opacity-80 transition-opacity" style={{ color: COLORS[c.name] }}>{c.value}건</p>
+                      <div className="mb-1">
+                        <p className="text-xs text-gray-400">오늘 {c.todayCount}건</p>
+                        <p className={`text-xs font-medium ${c.diff > 0 ? 'text-green-400' : c.diff < 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                          {c.diff > 0 ? `▲ ${c.diff}` : c.diff < 0 ? `▼ ${Math.abs(c.diff)}` : '- 0'} 전일比
+                        </p>
+                      </div>
+                    </div>
                   </button>
                   <div className="space-y-1.5 border-t border-gray-700 pt-3">
                     {c.segments.map(seg => (
@@ -336,6 +380,10 @@ export default function Home() {
                 <div key={p.name} className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
                   <p className="text-gray-400 text-sm mb-1">{p.name}</p>
                   <p className="text-3xl font-bold" style={{ color: PLATFORM_COLORS[p.name] }}>{p.value}건</p>
+                  <div className="flex gap-3 mt-2">
+                    <span className="text-xs text-red-400">🔴 라이브 {p.live}</span>
+                    <span className="text-xs text-gray-400">📹 VOD {p.vod}</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -451,7 +499,7 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-4 gap-4 mb-6">
               <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
                 <h2 className="text-sm font-semibold text-gray-400 mb-4">감성 비율</h2>
                 <ResponsiveContainer width="100%" height={180}>
@@ -477,13 +525,29 @@ export default function Home() {
                 </ResponsiveContainer>
               </div>
               <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                <h2 className="text-sm font-semibold text-gray-400 mb-4">키워드별 언급량</h2>
+                <h2 className="text-sm font-semibold text-gray-400 mb-4">🆚 자사 vs 경쟁작 감성</h2>
                 <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={keywordBreakdown} layout="vertical">
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="name" width={80} tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                  <BarChart data={vsData}>
+                    <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                    <YAxis hide />
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
-                    <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} />
+                    <Legend />
+                    <Bar dataKey="긍정" stackId="a" fill="#22c55e" radius={[0,0,0,0]} />
+                    <Bar dataKey="중립" stackId="a" fill="#6b7280" radius={[0,0,0,0]} />
+                    <Bar dataKey="부정" stackId="a" fill="#ef4444" radius={[4,4,0,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                <h2 className="text-sm font-semibold text-gray-400 mb-4">📊 커뮤니티별 감성</h2>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={heatmapData} layout="vertical">
+                    <XAxis type="number" hide />
+                    <YAxis type="category" dataKey="community" width={60} tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
+                    <Bar dataKey="긍정" stackId="a" fill="#22c55e" />
+                    <Bar dataKey="중립" stackId="a" fill="#6b7280" />
+                    <Bar dataKey="부정" stackId="a" fill="#ef4444" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
