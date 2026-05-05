@@ -210,11 +210,13 @@ export default function Home() {
     return { date: `${d.getMonth()+1}/${d.getDate()}`, count: news.filter(n => (n.collected_at||'').startsWith(ds)).length }
   })
 
-  // 키워드 빈도 분석 - filteredNews 기준
+  // 키워드 빈도 분석 - filteredNews 기준 (소스명/커뮤니티명 제외)
+  const EXCLUDED_TAGS = ['루리웹', '인벤', '디시인사이드', '네이버카페', '아카라이브', '디스이즈게임', 'Google News', '네이버', '네이버블로그', 'SOOP', '치지직', '유튜브']
   const keywordFreq = (() => {
     const freq: Record<string, {count: number, cat: string}> = {}
     filteredNews.forEach(n => {
       (n.tags || []).forEach(tag => {
+        if (EXCLUDED_TAGS.some(ex => tag.includes(ex))) return
         if (!freq[tag]) freq[tag] = { count: 0, cat: n.category }
         freq[tag].count++
       })
