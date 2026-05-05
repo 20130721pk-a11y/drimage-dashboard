@@ -27,6 +27,55 @@ const COMM_KEYWORDS: Record<string, string[]> = {
   '경쟁사': ['포트나이트', '이터널리턴', '배틀그라운드', '발로란트', '리그오브레전드'],
 }
 
+function WordCloud({ words }: { words: {name: string, count: number, cat: string}[] }) {
+  if (!words.length) return null
+  const maxCount = words[0]?.count || 1
+  const width = 500
+  const height = 220
+  const placed: {x:number,y:number,w:number,h:number}[] = []
+
+  function overlaps(a: {x:number,y:number,w:number,h:number}, b: {x:number,y:number,w:number,h:number}) {
+    return !(a.x + a.w/2 < b.x - b.w/2 || a.x - a.w/2 > b.x + b.w/2 || a.y + a.h/2 < b.y - b.h/2 || a.y - a.h/2 > b.y + b.h/2)
+  }
+
+  const items = words.slice(0, 25).map((kw, i) => {
+    const size = Math.max(11, Math.round(11 + (kw.count / maxCount) * 22))
+    const text = kw.name
+    const w = text.length * size * 0.65 + 16
+    const h = size + 12
+    const color = ({"자사":"#a5b4fc","경쟁사":"#fca5a5","업계":"#6ee7b7"} as any)[kw.cat] || '#94a3b8'
+    let x = 0, y = 0, found = false
+    const cx = width / 2, cy = height / 2
+    for (let r = 0; r < 200; r += 3) {
+      for (let a = 0; a < Math.PI * 2; a += 0.3) {
+        const tx = cx + r * Math.cos(a + i * 0.5)
+        const ty = cy + r * Math.sin(a + i * 0.5) * 0.6
+        if (tx - w/2 < 4 || tx + w/2 > width - 4 || ty - h/2 < 4 || ty + h/2 > height - 4) continue
+        const box = {x:tx, y:ty, w, h}
+        if (!placed.some(p => overlaps(p, box))) {
+          x = tx; y = ty; found = true; placed.push(box); break
+        }
+      }
+      if (found) break
+    }
+    if (!found) return null
+    return { text, x, y, size, color, kw }
+  }).filter(Boolean)
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{overflow:'visible'}}>
+      {items.map((item: any, i: number) => (
+        <g key={item.kw.name} className="cursor-pointer" style={{transition:'opacity 0.2s'}} onClick={() => {}} >
+          <rect x={item.x - item.size * item.text.length * 0.32 - 8} y={item.y - item.size/2 - 5} width={item.text.length * item.size * 0.65 + 16} height={item.size + 10} rx="4" fill={item.color + '22'} />
+          <text x={item.x} y={item.y + item.size * 0.35} textAnchor="middle" fontSize={item.size} fontWeight={item.count === words[0]?.count ? 700 : item.count > words[0]?.count * 0.5 ? 600 : 400} fill={item.color} fontFamily="system-ui, sans-serif">
+            {item.text}
+          </text>
+        </g>
+      ))}
+    </svg>
+  )
+}
+
 function stripHtml(html: string) {
   return html?.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim() || ''
 }
@@ -390,32 +439,22 @@ export default function Home() {
 
                 {/* 시각화 섹션 - 3개로 통합 정리 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
-                  {/* 키워드 버블 - 소스 정보 통합 */}
+                  {/* 키워드 워드클라우드 */}
                   <div className="col-span-5 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs text-gray-500 font-medium">🏷️ 키워드 언급 빈도</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">☁️ 키워드 워드클라우드</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {keywordFreq.slice(0,18).map(kw => {
-                        const maxCount = keywordFreq[0]?.count || 1
-                        const size = Math.max(0.7, kw.count / maxCount)
-                        return (
-                          <button key={kw.name} onClick={() => { const cat = Object.entries(SEGMENTS).find(([,s])=>s.includes(kw.name))?.[0]||'전체'; handleNewsClick(cat, kw.name) }} className="rounded-full px-3 py-1.5 font-medium transition-all hover:scale-110 hover:shadow-lg" style={{ backgroundColor: (COLORS[kw.name]||COLORS[kw.cat]||'#4f46e5')+'33', color: COLORS[kw.name]||COLORS[kw.cat]||'#a5b4fc', border: `1px solid ${(COLORS[kw.name]||COLORS[kw.cat]||'#4f46e5')}55`, fontSize: `${Math.max(10, 10 + size * 6)}px` }}>
-                            {kw.name} <span className="opacity-70">{kw.count}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                    {/* 소스별 비중 인라인 */}
-                    <div className="mt-4 pt-4 border-t border-gray-700">
-                      <p className="text-xs text-gray-600 mb-2">📡 소스별</p>
-                      <div className="flex gap-3 flex-wrap">
+                    <WordCloud words={keywordFreq} />
+                    <div className="flex gap-4 mt-3 pt-3 border-t border-gray-700 flex-wrap">
+                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-indigo-400"></div><span className="text-xs text-gray-500">자사</span></div>
+                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-400"></div><span className="text-xs text-gray-500">경쟁사</span></div>
+                      <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-400"></div><span className="text-xs text-gray-500">업계</span></div>
+                      <div className="ml-auto flex gap-3 flex-wrap">
                         {sourceFreq.map((s, i) => (
                           <div key={s.name} className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'][i%6] }}></div>
-                            <span className="text-xs text-gray-400">{s.name}</span>
-                            <span className="text-xs font-medium text-gray-300">{s.value}</span>
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6'][i%5] }}></div>
+                            <span className="text-xs text-gray-500">{s.name} {s.value}</span>
                           </div>
                         ))}
                       </div>
