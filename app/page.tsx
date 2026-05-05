@@ -301,7 +301,7 @@ export default function Home() {
               <p className="text-gray-500 text-xs mt-3">{filteredNews.length}건 표시 중</p>
             </div>
 
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-5 gap-3">
               {filteredNews.slice(0, newsLimit).map(item => (
                 <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-500 transition-colors">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -398,7 +398,7 @@ export default function Home() {
               <p className="text-gray-500 text-xs mt-3">{filteredStreams.length}건 표시 중</p>
             </div>
 
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-6 gap-3">
               {filteredStreams.slice(0, streamLimit).map(item => (
                 <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block bg-gray-800 rounded-xl overflow-hidden border border-gray-700 hover:border-gray-500 transition-colors">
                   <div className="relative">
