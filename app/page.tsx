@@ -163,7 +163,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-6">
-      <div className="max-w-screen-2xl mx-auto px-4">
+      <div className="w-full px-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-1">업계 동향 모니터링</h1>
           <p className="text-gray-400 text-sm">게임 업계 주요 정보를 매일 자동 수집합니다</p>
