@@ -220,7 +220,10 @@ export default function Home() {
   })
 
   // 키워드 빈도 분석 - filteredNews 기준 (소스명/커뮤니티명 제외)
-  const keywordFreq = newsKeywords.slice(0, 30).map(k => ({ name: k.keyword, count: k.count, cat: k.category }))
+  const keywordFreq = newsKeywords
+    .filter(k => category === '전체' || k.category === category)
+    .slice(0, 30)
+    .map(k => ({ name: k.keyword, count: k.count, cat: k.category }))
 
   // 소스별 비중 - filteredNews 기준
   const sourceFreq = (() => {
