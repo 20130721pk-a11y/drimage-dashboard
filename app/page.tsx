@@ -607,29 +607,74 @@ export default function Home() {
 
                 {/* 필터 */}
                 <div ref={listRef} className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4">
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <div className="flex gap-1">
+                  <div className="flex items-center gap-4">
+                    {/* 카테고리 */}
+                    <div className="flex gap-1 bg-gray-700 p-1 rounded-xl">
                       {['전체','자사','경쟁사','업계'].map(cat => (
-                        <button key={cat} onClick={() => { setCategory(cat); setSegment('') }} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${category===cat&&!segment ? 'bg-white text-gray-900' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>{cat}</button>
+                        <button key={cat} onClick={() => { setCategory(cat); setSegment('') }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${category===cat&&!segment ? 'bg-white text-gray-900 shadow' : 'text-gray-400 hover:text-white'}`}>
+                          {cat}
+                        </button>
                       ))}
                     </div>
-                    {category !== '전체' && SEGMENTS[category]?.map(seg => (
-                      <button key={seg} onClick={() => setSegment(seg===segment?'':seg)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${segment===seg?'text-white':'bg-gray-700 text-gray-400'}`} style={segment===seg?{backgroundColor:COLORS[seg]}:{}}>{seg}</button>
-                    ))}
-                    <div className="flex gap-1 ml-auto">
-                      {['전체','구글 뉴스','네이버 뉴스','네이버 블로그'].map(st => (
-                        <button key={st} onClick={() => setSourceType(st)} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${sourceType===st?'bg-indigo-600 text-white':'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>{st}</button>
-                      ))}
-                    </div>
-                    <input type="text" placeholder="검색..." value={search} onChange={e => setSearch(e.target.value)} className="bg-gray-700 text-white px-3 py-1.5 rounded-lg outline-none border border-gray-600 text-xs w-40" />
+
+                    {/* 세그먼트 */}
+                    {category !== '전체' && (
+                      <div className="flex gap-1">
+                        {SEGMENTS[category]?.map(seg => (
+                          <button key={seg} onClick={() => setSegment(seg===segment?'':seg)}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${segment===seg?'text-white shadow':'bg-gray-700/50 text-gray-400 hover:bg-gray-700'}`}
+                            style={segment===seg?{backgroundColor:COLORS[seg]}:{}}>
+                            {seg}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 선택된 키워드 */}
                     {selectedKeyword && (
-                      <button onClick={() => setSelectedKeyword('')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600/30 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/50 transition-colors">
-                        ☁️ {selectedKeyword} <span className="opacity-60">✕</span>
+                      <button onClick={() => setSelectedKeyword('')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600/30 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/50 transition-colors">
+                        ☁️ {selectedKeyword} <span className="opacity-60 ml-1">✕</span>
                       </button>
                     )}
-                    {(search||segment||sourceType!=='전체'||selectedKeyword) && <button onClick={() => {setSearch('');setSegment('');setSourceType('전체');setSelectedKeyword('')}} className="px-3 py-1.5 bg-gray-700 text-gray-400 rounded-lg text-xs hover:bg-gray-600">초기화</button>}
+
+                    {/* 우측 영역 */}
+                    <div className="flex items-center gap-2 ml-auto">
+                      {/* 소스 필터 - 아이콘 포함 */}
+                      <div className="flex gap-1 bg-gray-700 p-1 rounded-xl">
+                        {[
+                          { key: '전체', label: '전체', icon: '📋' },
+                          { key: '구글 뉴스', label: 'Google', icon: '🔍' },
+                          { key: '네이버 뉴스', label: 'Naver', icon: '🟢' },
+                          { key: '네이버 블로그', label: 'Blog', icon: '✏️' },
+                        ].map(st => (
+                          <button key={st.key} onClick={() => setSourceType(st.key)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${sourceType===st.key ? 'bg-white text-gray-900 shadow' : 'text-gray-400 hover:text-white'}`}>
+                            <span>{st.icon}</span>
+                            <span>{st.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* 검색창 */}
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">🔎</span>
+                        <input type="text" placeholder="뉴스 검색..." value={search}
+                          onChange={e => setSearch(e.target.value)}
+                          className="bg-gray-700 text-white pl-8 pr-3 py-1.5 rounded-xl outline-none border border-gray-600 focus:border-indigo-500 text-xs w-44 transition-colors" />
+                      </div>
+
+                      {/* 초기화 */}
+                      {(search||segment||sourceType!=='전체'||selectedKeyword) && (
+                        <button onClick={() => {setSearch('');setSegment('');setSourceType('전체');setSelectedKeyword('')}}
+                          className="px-3 py-1.5 bg-gray-700 text-gray-400 rounded-xl text-xs hover:bg-gray-600 hover:text-white transition-colors">
+                          초기화
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-600 mt-2">{filteredNews.length}건 표시 중</p>
+                  <p className="text-xs text-gray-600 mt-3">{filteredNews.length}건 표시 중</p>
                 </div>
 
                 <div className="grid grid-cols-5 gap-3">
