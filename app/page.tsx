@@ -523,33 +523,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* 소스 신뢰도 분포 */}
-                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs text-gray-500 font-medium">📡 소스 분포</p>
-                      <p className="text-xs text-gray-600">{periodLabel}</p>
-                    </div>
-                    <div className="space-y-3">
-                      {sourceDetail.map((s, i) => (
-                        <div key={s.name}>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-gray-400">{s.name}</span>
-                            <span className="text-gray-300 font-medium">{s.value}건 ({s.pct}%)</span>
-                          </div>
-                          <div className="h-2 bg-gray-700 rounded-full">
-                            <div className="h-2 rounded-full transition-all" style={{width:`${s.pct}%`, backgroundColor:['#6366f1','#10b981','#f59e0b','#ef4444'][i%4]}}></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-gray-700">
-                      <p className="text-xs text-gray-600">미디어 비중</p>
-                      <p className="text-lg font-bold text-white mt-1">
-                        {Math.round((sourceDetail.find(s=>s.name==='구글 뉴스')?.value||0 + (sourceDetail.find(s=>s.name==='네이버 뉴스')?.value||0)) / (filteredNews.length||1) * 100)}%
-                        <span className="text-xs text-gray-500 font-normal ml-1">공식 미디어</span>
-                      </p>
-                    </div>
-                  </div>
+
 
                   {/* 요일별 발행 패턴 */}
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
@@ -586,44 +560,46 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* 시간대별 발행량 바차트 */}
-                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  {/* 시간대별 발행량 + 소스 분포 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 발행량</p>
-                      <p className="text-xs text-indigo-400 font-medium">
-                        피크 {hourlyNews.reduce((a,b)=>a.count>b.count?a:b).hour}
-                      </p>
+                      <p className="text-xs text-indigo-400 font-medium">피크 {hourlyNews.reduce((a,b)=>a.count>b.count?a:b).hour}</p>
                     </div>
                     <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={hourlyNews.filter(h=>h.count>0)} barCategoryGap="10%">
+                      <BarChart data={hourlyNews} barCategoryGap="5%">
                         <XAxis dataKey="hour" tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} interval={3}/>
                         <YAxis tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} width={20}/>
                         <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any)=>[`${v}건`,'발행량']}/>
                         <Bar dataKey="count" radius={[3,3,0,0]}>
-                          {hourlyNews.filter(h=>h.count>0).map(h=>{
+                          {hourlyNews.map(h=>{
                             const max=Math.max(...hourlyNews.map(x=>x.count),1)
-                            const intensity=h.count/max
-                            return <Cell key={h.h} fill={`rgba(99,102,241,${0.3+intensity*0.7})`}/>
+                            return <Cell key={h.h} fill={h.count>0?`rgba(99,102,241,${0.3+(h.count/max)*0.7})`:'#1f2937'}/>
                           })}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-gray-700/50 rounded-lg p-2">
-                        <p className="text-gray-500">오전(6-12시)</p>
-                        <p className="text-white font-medium mt-0.5">{hourlyNews.filter(h=>h.h>=6&&h.h<12).reduce((a,b)=>a+b.count,0)}건</p>
-                      </div>
-                      <div className="bg-gray-700/50 rounded-lg p-2">
-                        <p className="text-gray-500">오후(12-18시)</p>
-                        <p className="text-white font-medium mt-0.5">{hourlyNews.filter(h=>h.h>=12&&h.h<18).reduce((a,b)=>a+b.count,0)}건</p>
-                      </div>
-                      <div className="bg-gray-700/50 rounded-lg p-2">
-                        <p className="text-gray-500">저녁(18-24시)</p>
-                        <p className="text-white font-medium mt-0.5">{hourlyNews.filter(h=>h.h>=18).reduce((a,b)=>a+b.count,0)}건</p>
-                      </div>
-                      <div className="bg-gray-700/50 rounded-lg p-2">
-                        <p className="text-gray-500">새벽(0-6시)</p>
-                        <p className="text-white font-medium mt-0.5">{hourlyNews.filter(h=>h.h<6).reduce((a,b)=>a+b.count,0)}건</p>
+                    <div className="grid grid-cols-4 gap-2 mt-3">
+                      {[['새벽','0-6시',0,6,'#6366f1'],['오전','6-12시',6,12,'#10b981'],['오후','12-18시',12,18,'#f59e0b'],['저녁','18-24시',18,24,'#ef4444']].map(([label,time,from,to,color]:any)=>(
+                        <div key={label} className="bg-gray-700/50 rounded-lg p-2 text-center">
+                          <p className="text-gray-500 text-xs">{label}</p>
+                          <p className="text-xs text-gray-600">{time}</p>
+                          <p className="font-bold mt-1" style={{color, fontSize:'15px'}}>{hourlyNews.filter(h=>h.h>=from&&h.h<to).reduce((a,b)=>a+b.count,0)}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-700">
+                      <p className="text-xs text-gray-600 mb-2">📡 소스별 ({periodLabel})</p>
+                      <div className="space-y-1.5">
+                        {sourceDetail.map((s,i)=>(
+                          <div key={s.name} className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 w-20 truncate">{s.name}</span>
+                            <div className="flex-1 h-1.5 bg-gray-700 rounded-full">
+                              <div className="h-1.5 rounded-full" style={{width:`${s.pct}%`,backgroundColor:['#6366f1','#10b981','#f59e0b','#ef4444'][i%4]}}></div>
+                            </div>
+                            <span className="text-xs text-gray-400 w-16 text-right">{s.value}건 {s.pct}%</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
