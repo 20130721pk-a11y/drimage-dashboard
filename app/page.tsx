@@ -318,50 +318,38 @@ export default function Home() {
                     </button>
                   ))}
 
-                  {/* 7일 트렌드 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-3">📈 7일간 수집 추이</p>
+                  {/* 7일 트렌드 - col-span-4로 확장 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">📈 7일간 카테고리별 추이</p>
+                    </div>
                     <ResponsiveContainer width="100%" height={120}>
-                      <AreaChart data={news7d}>
+                      <AreaChart data={(() => {
+                        return Array.from({ length: 7 }, (_, i) => {
+                          const d = new Date(); d.setDate(d.getDate() - (6 - i))
+                          const ds = d.toISOString().split('T')[0]
+                          return {
+                            date: `${d.getMonth()+1}/${d.getDate()}`,
+                            자사: news.filter(n => n.category==='자사' && (n.collected_at||'').startsWith(ds)).length,
+                            경쟁사: news.filter(n => n.category==='경쟁사' && (n.collected_at||'').startsWith(ds)).length,
+                            업계: news.filter(n => n.category==='업계' && (n.collected_at||'').startsWith(ds)).length,
+                          }
+                        })
+                      })()}>
                         <defs>
-                          <linearGradient id="newsGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                          </linearGradient>
+                          <linearGradient id="gradOwn" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradComp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradInd" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
                         </defs>
                         <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize: '12px' }} />
-                        <Area type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} fill="url(#newsGrad)" />
+                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
+                        <Area type="monotone" dataKey="자사" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradOwn)" />
+                        <Area type="monotone" dataKey="경쟁사" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradComp)" />
+                        <Area type="monotone" dataKey="업계" stroke="#10b981" strokeWidth={1.5} fill="url(#gradInd)" />
                       </AreaChart>
                     </ResponsiveContainer>
-                  </div>
-
-                  {/* 세그먼트 TOP */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-3">🏷️ 세그먼트 언급량 TOP 8</p>
-                    <ResponsiveContainer width="100%" height={120}>
-                      <BarChart data={newsSegData.sort((a,b)=>b.value-a.value).slice(0,8)} layout="vertical">
-                        <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="name" width={70} tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize: '12px' }} />
-                        <Bar dataKey="value" radius={[0, 4, 4, 0]} onClick={(d: any) => { const cat = Object.entries(SEGMENTS).find(([,s])=>s.includes(d.name))?.[0]||'전체'; handleNewsClick(cat, d.name) }} style={{ cursor: 'pointer' }}>
-                          {newsSegData.sort((a,b)=>b.value-a.value).slice(0,8).map(e => <Cell key={e.name} fill={COLORS[e.name] || '#6366f1'} />)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* 오늘 총계 */}
-                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700 flex flex-col justify-between">
-                    <p className="text-xs text-gray-500 font-medium">오늘 총 수집</p>
-                    <p className="text-5xl font-bold text-white">{news.filter(n=>(n.collected_at||'').startsWith(today)).length}</p>
-                    <div className="space-y-1">
-                      {['구글 뉴스','네이버 뉴스','네이버 블로그'].map(s => (
-                        <div key={s} className="flex justify-between text-xs">
-                          <span className="text-gray-500">{s}</span>
-                          <span className="text-gray-300">{news.filter(n=>(n.collected_at||'').startsWith(today) && n.source?.includes(SOURCE_MAP[s])).length}건</span>
-                        </div>
-                      ))}
+                    <div className="flex gap-4 mt-2">
+                      {['자사','경쟁사','업계'].map(c => <div key={c} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:COLORS[c]}}></div><span className="text-xs text-gray-500">{c}</span></div>)}
                     </div>
                   </div>
                 </div>
@@ -400,13 +388,16 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* 시각화 섹션 */}
+                {/* 시각화 섹션 - 3개로 통합 정리 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
-                  {/* 키워드 버블 차트 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-4">🏷️ 키워드 언급 빈도</p>
+                  {/* 키워드 버블 - 소스 정보 통합 */}
+                  <div className="col-span-5 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">🏷️ 키워드 언급 빈도</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {keywordFreq.slice(0,15).map(kw => {
+                      {keywordFreq.slice(0,18).map(kw => {
                         const maxCount = keywordFreq[0]?.count || 1
                         const size = Math.max(0.7, kw.count / maxCount)
                         return (
@@ -416,41 +407,33 @@ export default function Home() {
                         )
                       })}
                     </div>
-                  </div>
-
-                  {/* 소스별 비중 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-4">📡 소스별 비중</p>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <PieChart>
-                        <Pie data={sourceFreq} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" paddingAngle={3}>
-                          {sourceFreq.map((e, i) => <Cell key={e.name} fill={['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'][i%6]} />)}
-                        </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'11px' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="space-y-1 mt-1">
-                      {sourceFreq.slice(0,4).map((s, i) => (
-                        <div key={s.name} className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444'][i] }}></div>
-                            <span className="text-gray-400">{s.name}</span>
+                    {/* 소스별 비중 인라인 */}
+                    <div className="mt-4 pt-4 border-t border-gray-700">
+                      <p className="text-xs text-gray-600 mb-2">📡 소스별</p>
+                      <div className="flex gap-3 flex-wrap">
+                        {sourceFreq.map((s, i) => (
+                          <div key={s.name} className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'][i%6] }}></div>
+                            <span className="text-xs text-gray-400">{s.name}</span>
+                            <span className="text-xs font-medium text-gray-300">{s.value}</span>
                           </div>
-                          <span className="text-gray-300 font-medium">{s.value}건</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
 
                   {/* 경쟁사 비교 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-4">⚔️ 경쟁사별 언급량</p>
-                    <ResponsiveContainer width="100%" height={200}>
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">⚔️ 경쟁사별 언급량</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={180}>
                       <BarChart data={competitorData} layout="vertical" onClick={(d:any)=>{if(d?.activeLabel)handleNewsClick('경쟁사',d.activeLabel)}}>
                         <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="name" width={75} tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <YAxis type="category" dataKey="name" width={80} tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
                         <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'11px' }} />
-                        <Bar dataKey="뉴스" radius={[0,4,4,0]} style={{cursor:'pointer'}}>
+                        <Bar dataKey="뉴스" radius={[0,4,4,0]} style={{cursor:'pointer'}} label={{position:'right', fontSize:10, fill:'#6b7280'}}>
                           {competitorData.map(e => <Cell key={e.name} fill={COLORS[e.name]||'#ef4444'} />)}
                         </Bar>
                       </BarChart>
@@ -458,26 +441,32 @@ export default function Home() {
                   </div>
 
                   {/* 시간대별 히트맵 */}
-                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-4">⏰ 시간대별 발행량</p>
-                    <div className="grid grid-cols-4 gap-1">
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 발행량</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <div className="grid grid-cols-6 gap-1 mb-2">
                       {hourlyNews.map(h => {
                         const max = Math.max(...hourlyNews.map(x=>x.count), 1)
                         const intensity = h.count / max
                         return (
-                          <div key={h.h} className="flex flex-col items-center gap-0.5">
-                            <div className="w-full h-6 rounded" style={{ backgroundColor: intensity > 0 ? `rgba(99,102,241,${0.15 + intensity * 0.85})` : '#1f2937' }}></div>
-                            {h.h % 6 === 0 && <span className="text-xs text-gray-600">{h.h}시</span>}
+                          <div key={h.h} className="flex flex-col items-center gap-1">
+                            <div className="w-full h-8 rounded" style={{ backgroundColor: intensity > 0 ? `rgba(99,102,241,${0.15 + intensity * 0.85})` : '#1f2937' }} title={`${h.h}시 ${h.count}건`}></div>
+                            {h.h % 4 === 0 && <span className="text-xs text-gray-600">{h.h}</span>}
                           </div>
                         )
                       })}
                     </div>
-                    <div className="flex justify-between mt-3">
-                      <span className="text-xs text-gray-600">적음</span>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-gray-600">0시</span>
                       <div className="flex gap-0.5 items-center">
-                        {[0.1,0.3,0.5,0.7,0.9].map(o => <div key={o} className="w-3 h-2 rounded-sm" style={{backgroundColor:`rgba(99,102,241,${o})`}}></div>)}
+                        {[0.15,0.35,0.55,0.75,1.0].map(o => <div key={o} className="w-4 h-2 rounded-sm" style={{backgroundColor:`rgba(99,102,241,${o})`}}></div>)}
                       </div>
-                      <span className="text-xs text-gray-600">많음</span>
+                      <span className="text-xs text-gray-600">23시</span>
+                    </div>
+                    <div className="mt-3 text-center">
+                      <span className="text-xs text-gray-500">피크: {hourlyNews.reduce((a,b) => a.count > b.count ? a : b).hour} ({hourlyNews.reduce((a,b) => a.count > b.count ? a : b).count}건)</span>
                     </div>
                   </div>
                 </div>
@@ -650,25 +639,12 @@ export default function Home() {
                     <button key={s.name} onClick={() => handleCommClick(s.name)} className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700 hover:border-gray-500 transition-all text-left group">
                       <p className="text-xs text-gray-500 mb-3">{s.name==='긍정'?'😊':s.name==='부정'?'😠':'😐'} {s.name}</p>
                       <p className="text-4xl font-bold group-hover:opacity-80" style={{ color: SENTIMENT_COLORS[s.name] }}>{s.value}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
-                      <p className="text-xs mt-1" style={{ color: SENTIMENT_COLORS[s.name] }}>{keywordPosts.length>0?Math.round(s.value/keywordPosts.length*100):0}%</p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: SENTIMENT_COLORS[s.name] }}>{dateFilteredKeywordPosts.length>0?Math.round(s.value/dateFilteredKeywordPosts.length*100):0}<span className="text-xs font-normal">%</span></p>
                     </button>
                   ))}
 
-                  {/* 감성 파이차트 */}
-                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-2">감성 비율</p>
-                    <ResponsiveContainer width="100%" height={130}>
-                      <PieChart>
-                        <Pie data={sentimentCount} cx="50%" cy="50%" innerRadius={35} outerRadius={55} dataKey="value" onClick={(d:any)=>handleCommClick(d.name)} style={{cursor:'pointer'}}>
-                          {sentimentCount.map(e => <Cell key={e.name} fill={SENTIMENT_COLORS[e.name]} />)}
-                        </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'12px' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* 7일 추이 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  {/* 7일 추이 - 더 넓게 */}
+                  <div className="col-span-6 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <p className="text-xs text-gray-500 font-medium mb-2">📈 7일간 감성 추이</p>
                     <ResponsiveContainer width="100%" height={130}>
                       <LineChart data={comm7d}>
