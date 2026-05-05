@@ -93,7 +93,7 @@ export default function Home() {
     const matchSeg = !segment || n.tags?.includes(segment) || n.title?.includes(segment)
     const matchSearch = n.title?.toLowerCase().includes(search.toLowerCase())
     const matchSource = sourceType === '전체' || n.source?.includes(SOURCE_MAP[sourceType])
-    const dateVal = n.collected_at || n.published_at || ''
+    const dateVal = n.published_at || n.collected_at || ''
     const matchDate = dateVal >= newsFrom && dateVal <= newsTo
     return matchCat && matchSeg && matchSearch && matchSource && matchDate
   })
@@ -118,7 +118,7 @@ export default function Home() {
     const matchSentiment = commSentiment === '전체' || p.sentiment === commSentiment
     const matchCommunity = commCommunity === '전체' || p.community === commCommunity
     const matchSearch = p.title?.toLowerCase().includes(commSearch.toLowerCase())
-    const dateVal = p.collected_at || ''
+    const dateVal = p.posted_at || p.collected_at || ''
     const matchDate = dateVal >= postFrom && dateVal <= postTo
     return matchSentiment && matchCommunity && matchSearch && matchDate
   })
