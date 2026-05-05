@@ -65,6 +65,9 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [rangeFrom, setRangeFrom] = useState(new Date().toISOString().split('T')[0])
   const [rangeTo, setRangeTo] = useState(new Date().toISOString().split('T')[0])
+  const [newsLimit, setNewsLimit] = useState(24)
+  const [streamLimit, setStreamLimit] = useState(24)
+  const [postLimit, setPostLimit] = useState(24)
   const newsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { fetchAll() }, [])
@@ -298,28 +301,29 @@ export default function Home() {
               <p className="text-gray-500 text-xs mt-3">{filteredNews.length}건 표시 중</p>
             </div>
 
-            <div className="space-y-3">
-              {filteredNews.map(item => (
+            <div className="grid grid-cols-3 gap-3">
+              {filteredNews.slice(0, newsLimit).map(item => (
                 <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-500 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: COLORS[item.category] + '33', color: COLORS[item.category] }}>{item.category}</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-400">{item.source?.includes('Google News') ? '구글 뉴스' : item.source?.includes('네이버블로그') ? '네이버 블로그' : item.source?.includes('네이버') ? '네이버 뉴스' : item.source}</span>
-                      </div>
-                      <h2 className="text-white font-medium leading-snug mb-1">{item.title}</h2>
-                      {item.summary && <p className="text-gray-400 text-sm line-clamp-2">{stripHtml(item.summary)}</p>}
-                    </div>
-                    <div className="text-xs text-gray-500 whitespace-nowrap">{item.published_at ? new Date(item.published_at).toLocaleDateString('ko-KR') : ''}</div>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: COLORS[item.category] + '33', color: COLORS[item.category] }}>{item.category}</span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-400">{item.source?.includes('Google News') ? '구글' : item.source?.includes('네이버블로그') ? 'N블로그' : item.source?.includes('네이버') ? 'N뉴스' : item.source?.replace('Google News - ', '').replace('네이버 - ', '').replace('네이버블로그 - ', '')}</span>
+                    <span className="text-xs text-gray-500 ml-auto">{item.published_at ? new Date(item.published_at).toLocaleDateString('ko-KR') : ''}</span>
                   </div>
+                  <h2 className="text-white text-sm font-medium leading-snug mb-2 line-clamp-2">{item.title}</h2>
+                  {item.summary && <p className="text-gray-500 text-xs line-clamp-2">{stripHtml(item.summary)}</p>}
                   {item.tags && item.tags.length > 0 && (
                     <div className="flex gap-1 mt-2 flex-wrap">
-                      {item.tags.map(tag => <span key={tag} className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: (COLORS[tag] || '#374151') + '44', color: COLORS[tag] || '#9ca3af' }}>#{tag}</span>)}
+                      {item.tags.slice(0, 3).map(tag => <span key={tag} className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: (COLORS[tag] || '#374151') + '44', color: COLORS[tag] || '#9ca3af' }}>#{tag}</span>)}
                     </div>
                   )}
                 </a>
               ))}
             </div>
+            {filteredNews.length > newsLimit && (
+              <button onClick={() => setNewsLimit(prev => prev + 24)} className="w-full mt-4 py-3 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition-colors border border-gray-700">
+                더보기 ({filteredNews.length - newsLimit}개 남음)
+              </button>
+            )}
           </>
         ) : activeTab === 'streams' ? (
           <>
@@ -394,25 +398,33 @@ export default function Home() {
               <p className="text-gray-500 text-xs mt-3">{filteredStreams.length}건 표시 중</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              {filteredStreams.map(item => (
-                <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-500 transition-colors">
-                  <div className="flex gap-4">
-                    {item.thumbnail && <img src={item.thumbnail} alt="" className="w-32 h-20 object-cover rounded-lg flex-shrink-0" />}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        {item.is_live && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 text-white font-medium animate-pulse">🔴 LIVE</span>}
-                        <span className="text-xs px-2 py-0.5 rounded font-medium" style={{ backgroundColor: PLATFORM_COLORS[item.platform] + '33', color: PLATFORM_COLORS[item.platform] }}>{item.platform}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: COLORS[item.category] + '33', color: COLORS[item.category] }}>{item.category}</span>
-                      </div>
-                      <h2 className="text-white font-medium leading-snug mb-1 truncate">{item.title}</h2>
-                      <p className="text-gray-400 text-sm">{item.channel_name}</p>
+            <div className="grid grid-cols-4 gap-3">
+              {filteredStreams.slice(0, streamLimit).map(item => (
+                <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block bg-gray-800 rounded-xl overflow-hidden border border-gray-700 hover:border-gray-500 transition-colors">
+                  <div className="relative">
+                    {item.thumbnail
+                      ? <img src={item.thumbnail} alt="" className="w-full h-32 object-cover" />
+                      : <div className="w-full h-32 bg-gray-700 flex items-center justify-center"><span className="text-gray-500 text-xs">No Image</span></div>
+                    }
+                    {item.is_live && <span className="absolute top-2 left-2 text-xs px-2 py-0.5 rounded-full bg-red-500 text-white font-medium animate-pulse">🔴 LIVE</span>}
+                    <span className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded font-medium" style={{ backgroundColor: PLATFORM_COLORS[item.platform] }}>{item.platform}</span>
+                  </div>
+                  <div className="p-3">
+                    <h2 className="text-white text-xs font-medium leading-snug mb-1 line-clamp-2">{item.title}</h2>
+                    <p className="text-gray-500 text-xs">{item.channel_name}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: COLORS[item.category] + '33', color: COLORS[item.category] }}>{item.category}</span>
+                      <span className="text-xs text-gray-600">{item.started_at ? new Date(item.started_at).toLocaleDateString('ko-KR') : ''}</span>
                     </div>
-                    <div className="text-xs text-gray-500 whitespace-nowrap">{item.started_at ? new Date(item.started_at).toLocaleDateString('ko-KR') : ''}</div>
                   </div>
                 </a>
               ))}
             </div>
+            {filteredStreams.length > streamLimit && (
+              <button onClick={() => setStreamLimit(prev => prev + 24)} className="w-full mt-4 py-3 bg-gray-800 text-gray-400 rounded-xl text-sm hover:bg-gray-700 transition-colors border border-gray-700">
+                더보기 ({filteredStreams.length - streamLimit}개 남음)
+              </button>
+            )}
           </>
         ) : (
           <>
