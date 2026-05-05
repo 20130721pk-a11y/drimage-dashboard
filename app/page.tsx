@@ -28,7 +28,7 @@ const COMM_KEYWORDS: Record<string, string[]> = {
   '경쟁사': ['포트나이트', '이터널리턴', '배틀그라운드', '발로란트', '리그오브레전드'],
 }
 
-function WordCloud({ words }: { words: {name: string, count: number, cat: string}[] }) {
+function WordCloud({ words, onWordClick, selectedWord }: { words: {name: string, count: number, cat: string}[], onWordClick?: (word: string) => void, selectedWord?: string }) {
   if (!words.length) return null
   const maxCount = words[0]?.count || 1
   const width = 500
@@ -67,7 +67,7 @@ function WordCloud({ words }: { words: {name: string, count: number, cat: string
     <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{overflow:'visible'}}>
       {items.map((item: any, i: number) => (
         <g key={item.kw.name} className="cursor-pointer" style={{transition:'opacity 0.2s'}} onClick={() => {}} >
-          <rect x={item.x - item.size * item.text.length * 0.32 - 8} y={item.y - item.size/2 - 5} width={item.text.length * item.size * 0.65 + 16} height={item.size + 10} rx="4" fill={item.color + '22'} />
+          <rect x={item.x - item.size * item.text.length * 0.32 - 8} y={item.y - item.size/2 - 5} width={item.text.length * item.size * 0.65 + 16} height={item.size + 10} rx="4" fill={selectedWord === item.kw.name ? item.color + '44' : item.color + '22'} stroke={selectedWord === item.kw.name ? item.color : 'none'} strokeWidth="1.5" />
           <text x={item.x} y={item.y + item.size * 0.35} textAnchor="middle" fontSize={item.size} fontWeight={item.count === words[0]?.count ? 700 : item.count > words[0]?.count * 0.5 ? 600 : 400} fill={item.color} fontFamily="system-ui, sans-serif">
             {item.text}
           </text>
@@ -112,6 +112,7 @@ export default function Home() {
   const [newsKeywords, setNewsKeywords] = useState<NewsKeyword[]>([])
   const [streamLimit, setStreamLimit] = useState(24)
   const [postLimit, setPostLimit] = useState(24)
+  const [selectedKeyword, setSelectedKeyword] = useState<string>('')
   const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { fetchAll() }, [])
@@ -163,8 +164,9 @@ export default function Home() {
     const matchSeg = !segment || n.tags?.includes(segment) || n.title?.includes(segment)
     const matchSearch = n.title?.toLowerCase().includes(search.toLowerCase())
     const matchSource = sourceType === '전체' || n.source?.includes(SOURCE_MAP[sourceType])
+    const matchKeyword = !selectedKeyword || n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword)
     const dateVal = n.published_at || n.collected_at || ''
-    return matchCat && matchSeg && matchSearch && matchSource && dateVal >= df && dateVal <= dt
+    return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= df && dateVal <= dt
   })
 
   const filteredStreams = streams.filter(s => {
@@ -500,7 +502,10 @@ export default function Home() {
                       <p className="text-xs text-gray-500 font-medium">☁️ 키워드 워드클라우드</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
                     </div>
-                    <WordCloud words={keywordFreq} />
+                    <WordCloud words={keywordFreq} onWordClick={(word: string) => {
+                      setSelectedKeyword(selectedKeyword === word ? '' : word)
+                      scrollToList()
+                    }} selectedWord={selectedKeyword} />
                     <div className="flex gap-4 mt-3 pt-3 border-t border-gray-700 flex-wrap">
                       <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-indigo-400"></div><span className="text-xs text-gray-500">자사</span></div>
                       <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-400"></div><span className="text-xs text-gray-500">경쟁사</span></div>
@@ -613,7 +618,12 @@ export default function Home() {
                       ))}
                     </div>
                     <input type="text" placeholder="검색..." value={search} onChange={e => setSearch(e.target.value)} className="bg-gray-700 text-white px-3 py-1.5 rounded-lg outline-none border border-gray-600 text-xs w-40" />
-                    {(search||segment||sourceType!=='전체') && <button onClick={() => {setSearch('');setSegment('');setSourceType('전체')}} className="px-3 py-1.5 bg-gray-700 text-gray-400 rounded-lg text-xs hover:bg-gray-600">초기화</button>}
+                    {selectedKeyword && (
+                      <button onClick={() => setSelectedKeyword('')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600/30 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/50 transition-colors">
+                        ☁️ {selectedKeyword} <span className="opacity-60">✕</span>
+                      </button>
+                    )}
+                    {(search||segment||sourceType!=='전체'||selectedKeyword) && <button onClick={() => {setSearch('');setSegment('');setSourceType('전체');setSelectedKeyword('')}} className="px-3 py-1.5 bg-gray-700 text-gray-400 rounded-lg text-xs hover:bg-gray-600">초기화</button>}
                   </div>
                   <p className="text-xs text-gray-600 mt-2">{filteredNews.length}건 표시 중</p>
                 </div>
