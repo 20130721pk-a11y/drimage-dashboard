@@ -154,6 +154,58 @@ export default function Home() {
     return { date: `${d.getMonth()+1}/${d.getDate()}`, count: news.filter(n => (n.collected_at||'').startsWith(ds)).length }
   })
 
+  // 키워드 빈도 분석
+  const keywordFreq = (() => {
+    const freq: Record<string, {count: number, cat: string}> = {}
+    news.forEach(n => {
+      (n.tags || []).forEach(tag => {
+        if (!freq[tag]) freq[tag] = { count: 0, cat: n.category }
+        freq[tag].count++
+      })
+    })
+    return Object.entries(freq).map(([name, {count, cat}]) => ({ name, count, cat })).sort((a,b) => b.count - a.count).slice(0, 20)
+  })()
+
+  // 소스별 비중
+  const sourceFreq = (() => {
+    const freq: Record<string, number> = {}
+    news.forEach(n => {
+      const src = n.source?.includes('Google News') ? '구글 뉴스'
+        : n.source?.includes('네이버블로그') ? '네이버 블로그'
+        : n.source?.includes('네이버') ? '네이버 뉴스'
+        : n.source?.includes('루리웹') ? '루리웹'
+        : n.source?.includes('인벤') ? '인벤'
+        : '기타'
+      freq[src] = (freq[src] || 0) + 1
+    })
+    return Object.entries(freq).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value)
+  })()
+
+  // 경쟁사 비교
+  const competitorData = SEGMENTS['경쟁사'].map(comp => ({
+    name: comp,
+    뉴스: news.filter(n => n.category === '경쟁사' && (n.tags?.includes(comp) || n.title?.includes(comp))).length,
+  })).sort((a,b) => b.뉴스 - a.뉴스)
+
+  // 시간대별 발행량
+  const hourlyNews = Array.from({ length: 24 }, (_, h) => ({
+    hour: `${h}시`,
+    h,
+    count: news.filter(n => {
+      const d = n.published_at || n.collected_at
+      return d && new Date(d).getHours() === h
+    }).length
+  }))
+
+  // 오늘의 하이라이트
+  const todayNews = news.filter(n => (n.collected_at||'').startsWith(today))
+  const highlightNews = todayNews.sort((a,b) => {
+    const aScore = (a.tags?.length || 0)
+    const bScore = (b.tags?.length || 0)
+    return bScore - aScore
+  })[0]
+  const topKeywords = keywordFreq.slice(0, 6)
+
   // 방송 통계
   const streamPlatCount = ['유튜브', '치지직', 'SOOP'].map(p => ({
     name: p,
@@ -305,6 +357,122 @@ export default function Home() {
                           <span className="text-gray-300">{news.filter(n=>(n.collected_at||'').startsWith(today) && n.source?.includes(SOURCE_MAP[s])).length}건</span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 오늘의 하이라이트 */}
+                {highlightNews && (
+                  <div className="mb-6 rounded-2xl overflow-hidden border border-indigo-500/30 bg-gradient-to-r from-indigo-950/80 via-gray-900 to-gray-900 p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-indigo-500 text-white">🔥 오늘의 하이라이트</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <a href={highlightNews.url} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-base hover:text-indigo-300 transition-colors line-clamp-1">{highlightNews.title}</a>
+                        <p className="text-gray-400 text-sm mt-1 line-clamp-1">{highlightNews.summary ? highlightNews.summary.replace(/<[^>]*>/g,'').trim() : ''}</p>
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {(highlightNews.tags||[]).slice(0,5).map(tag => (
+                            <span key={tag} className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: (COLORS[tag]||'#4f46e5')+'33', color: COLORS[tag]||'#a5b4fc' }}>#{tag}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <p className="text-xs text-gray-500">오늘 수집</p>
+                        <p className="text-2xl font-bold text-indigo-400">{todayNews.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-indigo-500/20">
+                      <p className="text-xs text-gray-500 mb-2">오늘 주요 키워드</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {topKeywords.map((kw, i) => (
+                          <button key={kw.name} onClick={() => { const cat = Object.entries(SEGMENTS).find(([,s])=>s.includes(kw.name))?.[0]||'전체'; handleNewsClick(cat, kw.name) }} className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105" style={{ backgroundColor: (COLORS[kw.name]||'#4f46e5')+'22', color: COLORS[kw.name]||'#a5b4fc', border: `1px solid ${(COLORS[kw.name]||'#4f46e5')}44` }}>
+                            <span className="opacity-60">#{i+1}</span> {kw.name} <span className="font-bold">{kw.count}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 시각화 섹션 */}
+                <div className="grid grid-cols-12 gap-4 mb-6">
+                  {/* 키워드 버블 차트 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <p className="text-xs text-gray-500 font-medium mb-4">🏷️ 키워드 언급 빈도</p>
+                    <div className="flex flex-wrap gap-2">
+                      {keywordFreq.slice(0,15).map(kw => {
+                        const maxCount = keywordFreq[0]?.count || 1
+                        const size = Math.max(0.7, kw.count / maxCount)
+                        return (
+                          <button key={kw.name} onClick={() => { const cat = Object.entries(SEGMENTS).find(([,s])=>s.includes(kw.name))?.[0]||'전체'; handleNewsClick(cat, kw.name) }} className="rounded-full px-3 py-1.5 font-medium transition-all hover:scale-110 hover:shadow-lg" style={{ backgroundColor: (COLORS[kw.name]||COLORS[kw.cat]||'#4f46e5')+'33', color: COLORS[kw.name]||COLORS[kw.cat]||'#a5b4fc', border: `1px solid ${(COLORS[kw.name]||COLORS[kw.cat]||'#4f46e5')}55`, fontSize: `${Math.max(10, 10 + size * 6)}px` }}>
+                            {kw.name} <span className="opacity-70">{kw.count}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 소스별 비중 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <p className="text-xs text-gray-500 font-medium mb-4">📡 소스별 비중</p>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <PieChart>
+                        <Pie data={sourceFreq} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" paddingAngle={3}>
+                          {sourceFreq.map((e, i) => <Cell key={e.name} fill={['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'][i%6]} />)}
+                        </Pie>
+                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'11px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="space-y-1 mt-1">
+                      {sourceFreq.slice(0,4).map((s, i) => (
+                        <div key={s.name} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444'][i] }}></div>
+                            <span className="text-gray-400">{s.name}</span>
+                          </div>
+                          <span className="text-gray-300 font-medium">{s.value}건</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 경쟁사 비교 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <p className="text-xs text-gray-500 font-medium mb-4">⚔️ 경쟁사별 언급량</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={competitorData} layout="vertical" onClick={(d:any)=>{if(d?.activeLabel)handleNewsClick('경쟁사',d.activeLabel)}}>
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="name" width={75} tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'11px' }} />
+                        <Bar dataKey="뉴스" radius={[0,4,4,0]} style={{cursor:'pointer'}}>
+                          {competitorData.map(e => <Cell key={e.name} fill={COLORS[e.name]||'#ef4444'} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* 시간대별 히트맵 */}
+                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <p className="text-xs text-gray-500 font-medium mb-4">⏰ 시간대별 발행량</p>
+                    <div className="grid grid-cols-4 gap-1">
+                      {hourlyNews.map(h => {
+                        const max = Math.max(...hourlyNews.map(x=>x.count), 1)
+                        const intensity = h.count / max
+                        return (
+                          <div key={h.h} className="flex flex-col items-center gap-0.5">
+                            <div className="w-full h-6 rounded" style={{ backgroundColor: intensity > 0 ? `rgba(99,102,241,${0.15 + intensity * 0.85})` : '#1f2937' }}></div>
+                            {h.h % 6 === 0 && <span className="text-xs text-gray-600">{h.h}시</span>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className="flex justify-between mt-3">
+                      <span className="text-xs text-gray-600">적음</span>
+                      <div className="flex gap-0.5 items-center">
+                        {[0.1,0.3,0.5,0.7,0.9].map(o => <div key={o} className="w-3 h-2 rounded-sm" style={{backgroundColor:`rgba(99,102,241,${o})`}}></div>)}
+                      </div>
+                      <span className="text-xs text-gray-600">많음</span>
                     </div>
                   </div>
                 </div>
