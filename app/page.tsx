@@ -299,7 +299,9 @@ export default function Home() {
     h,
     count: filteredNews.filter(n => {
       const d = n.published_at || n.collected_at
-      return d && new Date(d).getHours() === h
+      if (!d) return false
+      const kstHour = (new Date(d).getUTCHours() + 9) % 24
+      return kstHour === h
     }).length
   }))
 
