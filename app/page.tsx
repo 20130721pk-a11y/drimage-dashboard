@@ -536,7 +536,7 @@ export default function Home() {
                         </span>
                       </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={280}>
+                    <ResponsiveContainer width="100%" height={350}>
                       <BarChart data={weekdayData} barCategoryGap="20%">
                         <XAxis dataKey="day" tick={{fill:'#9ca3af',fontSize:12}} axisLine={false} tickLine={false}/>
                         <YAxis tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false} width={25}/>
