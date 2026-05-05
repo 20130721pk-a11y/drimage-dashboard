@@ -130,10 +130,21 @@ export default function Home() {
   })
 
   // 뉴스 통계
+  const { from: df2, to: dt2 } = getDateFilter(dateMode, selectedDate, rangeFrom, rangeTo)
   const newsCatCount = ['자사', '경쟁사', '업계'].map(cat => {
     const total = news.filter(n => n.category === cat).length
-    const todayCnt = news.filter(n => n.category === cat && (n.collected_at || '').startsWith(today)).length
-    const yestCnt = news.filter(n => n.category === cat && (n.collected_at || '').startsWith(yesterday)).length
+    const todayCnt = news.filter(n => {
+      if (n.category !== cat) return false
+      const dv = n.published_at || n.collected_at || ''
+      return dv >= df2 && dv <= dt2
+    }).length
+    const yestFrom = yesterday + 'T00:00:00'
+    const yestTo = yesterday + 'T23:59:59'
+    const yestCnt = news.filter(n => {
+      if (n.category !== cat) return false
+      const dv = n.published_at || n.collected_at || ''
+      return dv >= yestFrom && dv <= yestTo
+    }).length
     return { name: cat, total, todayCnt, diff: todayCnt - yestCnt, segments: SEGMENTS[cat].map(seg => ({ name: seg, value: news.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length })) }
   })
   const newsSegData = Object.entries(SEGMENTS).flatMap(([cat, segs]) => segs.map(seg => ({ name: seg, value: news.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length, cat })))
@@ -144,13 +155,22 @@ export default function Home() {
   })
 
   // 방송 통계
-  const streamPlatCount = ['유튜브', '치지직', 'SOOP'].map(p => ({ name: p, value: streams.filter(s => s.platform === p).length, live: streams.filter(s => s.platform === p && s.is_live).length, vod: streams.filter(s => s.platform === p && !s.is_live).length }))
-  const liveCount = streams.filter(s => s.is_live).length
-  const streamCatCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat).length }))
+  const streamPlatCount = ['유튜브', '치지직', 'SOOP'].map(p => ({
+    name: p,
+    value: streams.filter(s => s.platform === p && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length,
+    live: streams.filter(s => s.platform === p && s.is_live && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length,
+    vod: streams.filter(s => s.platform === p && !s.is_live && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length,
+  }))
+  const liveCount = streams.filter(s => s.is_live && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length
+  const streamCatCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length }))
 
   // 커뮤니티 통계
-  const sentimentCount = ['긍정', '부정', '중립'].map(s => ({ name: s, value: keywordPosts.filter(p => p.sentiment === s).length }))
-  const commCount = Object.keys(COMMUNITY_COLORS).map(c => ({ name: c, value: keywordPosts.filter(p => p.community === c).length })).filter(c => c.value > 0)
+  const dateFilteredKeywordPosts = keywordPosts.filter(p => {
+    const dv = p.posted_at || p.collected_at || ''
+    return dv >= df2 && dv <= dt2
+  })
+  const sentimentCount = ['긍정', '부정', '중립'].map(s => ({ name: s, value: dateFilteredKeywordPosts.filter(p => p.sentiment === s).length }))
+  const commCount = Object.keys(COMMUNITY_COLORS).map(c => ({ name: c, value: dateFilteredKeywordPosts.filter(p => p.community === c).length })).filter(c => c.value > 0)
   const vsData = Object.entries(COMM_KEYWORDS).map(([label, kws]) => {
     const kp = posts.filter(p => kws.some(kw => p.keyword === kw || p.title?.includes(kw)))
     return { name: label === '자사' ? '알케론' : '경쟁작', 긍정: kp.filter(p => p.sentiment === '긍정').length, 부정: kp.filter(p => p.sentiment === '부정').length, 중립: kp.filter(p => p.sentiment === '중립').length }
@@ -162,8 +182,8 @@ export default function Home() {
     return { date: `${d.getMonth()+1}/${d.getDate()}`, 긍정: dp.filter(p => p.sentiment==='긍정').length, 부정: dp.filter(p => p.sentiment==='부정').length, 중립: dp.filter(p => p.sentiment==='중립').length }
   })
 
-  const posRate = keywordPosts.length > 0 ? Math.round(sentimentCount[0].value / keywordPosts.length * 100) : 0
-  const negRate = keywordPosts.length > 0 ? Math.round(sentimentCount[1].value / keywordPosts.length * 100) : 0
+  const posRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[0].value / dateFilteredKeywordPosts.length * 100) : 0
+  const negRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[1].value / dateFilteredKeywordPosts.length * 100) : 0
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
@@ -448,7 +468,7 @@ export default function Home() {
                   {/* 총 언급 */}
                   <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <p className="text-xs text-gray-500 mb-3">💬 총 언급</p>
-                    <p className="text-5xl font-bold text-white">{keywordPosts.length}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
+                    <p className="text-5xl font-bold text-white">{dateFilteredKeywordPosts.length}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
                     <p className="text-xs text-gray-600 mt-2">오늘 {keywordPosts.filter(p=>(p.collected_at||'').startsWith(today)).length}건</p>
                   </div>
 
