@@ -240,11 +240,56 @@ export default function Home() {
     return Object.entries(freq).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value)
   })()
 
-  // 경쟁사 비교 - filteredNews 기준
-  const competitorData = SEGMENTS['경쟁사'].map(comp => ({
-    name: comp,
-    뉴스: filteredNews.filter(n => n.category === '경쟁사' && (n.tags?.includes(comp) || n.title?.includes(comp))).length,
-  })).sort((a,b) => b.뉴스 - a.뉴스)
+  // 소스별 상세 분포
+  const sourceDetail = (() => {
+    const freq: Record<string, number> = {}
+    filteredNews.forEach(n => {
+      const src = n.source?.includes('Google News') ? '구글 뉴스'
+        : n.source?.includes('네이버블로그') ? '네이버 블로그'
+        : n.source?.includes('네이버') ? '네이버 뉴스'
+        : '기타'
+      freq[src] = (freq[src] || 0) + 1
+    })
+    const total = filteredNews.length || 1
+    return Object.entries(freq).map(([name, value]) => ({
+      name, value, pct: Math.round(value/total*100)
+    })).sort((a,b) => b.value - a.value)
+  })()
+
+  // 요일별 발행 패턴
+  const dayNames = ['일','월','화','수','목','금','토']
+  const weekdayData = dayNames.map((day, i) => ({
+    day,
+    자사: news.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='자사' }).length,
+    경쟁사: news.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='경쟁사' }).length,
+    업계: news.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='업계' }).length,
+  }))
+
+  // 급상승 키워드 (어제 대비 오늘 증가량)
+  const risingKeywords = (() => {
+    const todayKw: Record<string,number> = {}
+    const yestKw: Record<string,number> = {}
+    newsKeywords.forEach(k => {
+      // news_keywords는 전체 기준이므로 날짜별로 분리 불가 - filteredNews 제목에서 추출
+    })
+    // filteredNews 제목 기반 오늘 키워드
+    const todayNews2 = news.filter(n => (n.collected_at||'').startsWith(today))
+    const yestNews2 = news.filter(n => (n.collected_at||'').startsWith(yesterday))
+    const extract = (articles: typeof news) => {
+      const freq: Record<string,number> = {}
+      articles.forEach(n => {
+        (n.tags||[]).forEach(t => { if(t.length>=2) freq[t]=(freq[t]||0)+1 })
+      })
+      return freq
+    }
+    const tFreq = extract(todayNews2)
+    const yFreq = extract(yestNews2)
+    return Object.entries(tFreq)
+      .map(([kw, cnt]) => ({ name: kw, today: cnt, yesterday: yFreq[kw]||0, rise: cnt-(yFreq[kw]||0) }))
+      .filter(k => k.rise > 0 && k.today >= 1)
+      .sort((a,b) => b.rise - a.rise)
+      .slice(0, 8)
+  })()
 
   // 시간대별 발행량 - filteredNews 기준
   const hourlyNews = Array.from({ length: 24 }, (_, h) => ({
@@ -428,9 +473,16 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-indigo-500/20">
-                      <p className="text-xs text-gray-500 mb-2">오늘 주요 키워드</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-gray-500">주요 키워드</p>
+                        {risingKeywords.length > 0 && <p className="text-xs text-orange-400">🔥 급상승</p>}
+                      </div>
                       <div className="flex gap-2 flex-wrap">
-                        {topKeywords.map((kw, i) => (
+                        {risingKeywords.length > 0 ? risingKeywords.map((kw) => (
+                          <button key={kw.name} onClick={() => { const cat = Object.entries(SEGMENTS).find(([,s])=>s.includes(kw.name))?.[0]||'전체'; handleNewsClick(cat, kw.name) }} className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105 bg-orange-900/40 text-orange-300 border border-orange-500/30">
+                            ▲{kw.rise} {kw.name} <span className="font-bold opacity-70">{kw.today}</span>
+                          </button>
+                        )) : topKeywords.map((kw, i) => (
                           <button key={kw.name} onClick={() => { const cat = Object.entries(SEGMENTS).find(([,s])=>s.includes(kw.name))?.[0]||'전체'; handleNewsClick(cat, kw.name) }} className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105" style={{ backgroundColor: (COLORS[kw.name]||'#4f46e5')+'22', color: COLORS[kw.name]||'#a5b4fc', border: `1px solid ${(COLORS[kw.name]||'#4f46e5')}44` }}>
                             <span className="opacity-60">#{i+1}</span> {kw.name} <span className="font-bold">{kw.count}</span>
                           </button>
@@ -464,26 +516,57 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* 경쟁사 비교 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  {/* 소스 신뢰도 분포 */}
+                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs text-gray-500 font-medium">⚔️ 경쟁사별 언급량</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                      <p className="text-xs text-gray-500 font-medium">📡 소스 분포</p>
+                      <p className="text-xs text-gray-600">{periodLabel}</p>
                     </div>
-                    <ResponsiveContainer width="100%" height={180}>
-                      <BarChart data={competitorData} layout="vertical" onClick={(d:any)=>{if(d?.activeLabel)handleNewsClick('경쟁사',d.activeLabel)}}>
-                        <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="name" width={80} tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'11px' }} />
-                        <Bar dataKey="뉴스" radius={[0,4,4,0]} style={{cursor:'pointer'}} label={{position:'right', fontSize:10, fill:'#6b7280'}}>
-                          {competitorData.map(e => <Cell key={e.name} fill={COLORS[e.name]||'#ef4444'} />)}
-                        </Bar>
+                    <div className="space-y-3">
+                      {sourceDetail.map((s, i) => (
+                        <div key={s.name}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-400">{s.name}</span>
+                            <span className="text-gray-300 font-medium">{s.value}건 ({s.pct}%)</span>
+                          </div>
+                          <div className="h-2 bg-gray-700 rounded-full">
+                            <div className="h-2 rounded-full transition-all" style={{width:`${s.pct}%`, backgroundColor:['#6366f1','#10b981','#f59e0b','#ef4444'][i%4]}}></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-700">
+                      <p className="text-xs text-gray-600">미디어 비중</p>
+                      <p className="text-lg font-bold text-white mt-1">
+                        {Math.round((sourceDetail.find(s=>s.name==='구글 뉴스')?.value||0 + (sourceDetail.find(s=>s.name==='네이버 뉴스')?.value||0)) / (filteredNews.length||1) * 100)}%
+                        <span className="text-xs text-gray-500 font-normal ml-1">공식 미디어</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 요일별 발행 패턴 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">📅 요일별 발행 패턴</p>
+                      <p className="text-xs text-gray-600">전체 누적</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={weekdayData}>
+                        <XAxis dataKey="day" tick={{fill:'#9ca3af',fontSize:11}} axisLine={false} tickLine={false}/>
+                        <YAxis hide/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                        <Bar dataKey="자사" stackId="a" fill="#6366f1"/>
+                        <Bar dataKey="경쟁사" stackId="a" fill="#ef4444"/>
+                        <Bar dataKey="업계" stackId="a" fill="#10b981" radius={[4,4,0,0]}/>
                       </BarChart>
                     </ResponsiveContainer>
+                    <div className="flex gap-3 mt-2">
+                      {['자사','경쟁사','업계'].map(c=><div key={c} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:COLORS[c]}}></div><span className="text-xs text-gray-500">{c}</span></div>)}
+                    </div>
                   </div>
 
                   {/* 시간대별 히트맵 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-4">
                       <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 발행량</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
