@@ -176,7 +176,9 @@ export default function Home() {
     const matchType = streamType === '전체' || (streamType === '생방송' && s.is_live) || (streamType === 'VOD' && !s.is_live)
     const matchSeg = !streamSegment || s.tags?.includes(streamSegment) || s.title?.includes(streamSegment)
     const dateVal = s.started_at || ''
-    return matchCat && matchPlatform && matchSearch && matchType && matchSeg && dateVal >= df && dateVal <= dt
+    // 라이브 방송은 날짜 필터 무시하고 항상 표시
+    const matchDate = s.is_live || (dateVal >= df && dateVal <= dt)
+    return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate
   })
 
   const currentKeywords = COMM_KEYWORDS[commKeyword] || []
