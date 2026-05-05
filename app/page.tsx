@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend, AreaChart, Area } from 'recharts'
 
+type NewsKeyword = { keyword: string; category: string; count: number }
 type News = { id: string; title: string; summary: string; url: string; source: string; category: string; tags: string[]; published_at: string; collected_at: string }
 type Stream = { id: string; title: string; channel_name: string; platform: string; url: string; thumbnail: string; category: string; tags: string[]; is_live: boolean; started_at: string }
 type Post = { id: string; title: string; content: string; url: string; community: string; views: number; comments: number; sentiment: string; sentiment_reason: string; keyword: string; posted_at: string; collected_at: string }
@@ -108,6 +109,7 @@ export default function Home() {
   const [commCommunity, setCommCommunity] = useState('전체')
   const [commSearch, setCommSearch] = useState('')
   const [newsLimit, setNewsLimit] = useState(24)
+  const [newsKeywords, setNewsKeywords] = useState<NewsKeyword[]>([])
   const [streamLimit, setStreamLimit] = useState(24)
   const [postLimit, setPostLimit] = useState(24)
   const listRef = useRef<HTMLDivElement>(null)
@@ -116,14 +118,21 @@ export default function Home() {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: n }, { data: s }, { data: p }] = await Promise.all([
+    const [{ data: n }, { data: s }, { data: p }, { data: kw }] = await Promise.all([
       supabase.from('news').select('*').order('published_at', { ascending: false }).limit(1000),
       supabase.from('streams').select('*').order('started_at', { ascending: false }).limit(500),
       supabase.from('community_posts').select('*').order('collected_at', { ascending: false }).limit(2000),
+      supabase.from('news_keywords').select('keyword, category').order('collected_at', { ascending: false }).limit(5000),
     ])
     setNews(n || [])
     setStreams(s || [])
     setPosts(p || [])
+    const kwFreq: Record<string, {count:number, cat:string}> = {}
+    ;(kw || []).forEach((r: any) => {
+      if (!kwFreq[r.keyword]) kwFreq[r.keyword] = { count: 0, cat: r.category }
+      kwFreq[r.keyword].count++
+    })
+    setNewsKeywords(Object.entries(kwFreq).map(([keyword, {count, cat}]) => ({ keyword, count, category: cat })).sort((a,b) => b.count - a.count))
     setLoading(false)
   }
 
@@ -211,18 +220,7 @@ export default function Home() {
   })
 
   // 키워드 빈도 분석 - filteredNews 기준 (소스명/커뮤니티명 제외)
-  const EXCLUDED_TAGS = ['루리웹', '인벤', '디시인사이드', '네이버카페', '아카라이브', '디스이즈게임', 'Google News', '네이버', '네이버블로그', 'SOOP', '치지직', '유튜브']
-  const keywordFreq = (() => {
-    const freq: Record<string, {count: number, cat: string}> = {}
-    filteredNews.forEach(n => {
-      (n.tags || []).forEach(tag => {
-        if (EXCLUDED_TAGS.some(ex => tag.includes(ex))) return
-        if (!freq[tag]) freq[tag] = { count: 0, cat: n.category }
-        freq[tag].count++
-      })
-    })
-    return Object.entries(freq).map(([name, {count, cat}]) => ({ name, count, cat })).sort((a,b) => b.count - a.count).slice(0, 20)
-  })()
+  const keywordFreq = newsKeywords.slice(0, 30).map(k => ({ name: k.keyword, count: k.count, cat: k.category }))
 
   // 소스별 비중 - filteredNews 기준
   const sourceFreq = (() => {
