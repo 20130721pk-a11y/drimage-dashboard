@@ -29,6 +29,13 @@ const COMM_KEYWORDS: Record<string, string[]> = {
   '경쟁사': ['포트나이트', '이터널리턴', '배틀그라운드', '발로란트', '리그오브레전드'],
 }
 
+function getDateFilter(dateMode: string, selectedDate: string, rangeFrom: string, rangeTo: string) {
+  if (dateMode === 'single') {
+    return { from: selectedDate + 'T00:00:00', to: selectedDate + 'T23:59:59' }
+  }
+  return { from: rangeFrom + 'T00:00:00', to: rangeTo + 'T23:59:59' }
+}
+
 function stripHtml(html: string) {
   return html?.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim() || ''
 }
@@ -54,20 +61,20 @@ export default function Home() {
   const [commSentiment, setCommSentiment] = useState('전체')
   const [commCommunity, setCommCommunity] = useState('전체')
   const [commSearch, setCommSearch] = useState('')
+  const [dateMode, setDateMode] = useState<'single' | 'range'>('single')
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [rangeFrom, setRangeFrom] = useState(new Date().toISOString().split('T')[0])
+  const [rangeTo, setRangeTo] = useState(new Date().toISOString().split('T')[0])
   const newsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     setLoading(true)
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString()
-
     const [{ data: newsData }, { data: streamData }, { data: postData }] = await Promise.all([
-      supabase.from('news').select('*').gte('collected_at', sevenDaysAgoStr).order('published_at', { ascending: false }).limit(500),
-      supabase.from('streams').select('*').gte('collected_at', sevenDaysAgoStr).order('started_at', { ascending: false }).limit(300),
-      supabase.from('community_posts').select('*').gte('collected_at', sevenDaysAgoStr).order('collected_at', { ascending: false }).limit(1000),
+      supabase.from('news').select('*').order('published_at', { ascending: false }).limit(1000),
+      supabase.from('streams').select('*').order('started_at', { ascending: false }).limit(500),
+      supabase.from('community_posts').select('*').order('collected_at', { ascending: false }).limit(2000),
     ])
     setNews(newsData || [])
     setStreams(streamData || [])
@@ -80,33 +87,40 @@ export default function Home() {
     newsRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const { from: newsFrom, to: newsTo } = getDateFilter(dateMode, selectedDate, rangeFrom, rangeTo)
   const filteredNews = news.filter(n => {
     const matchCat = category === '전체' || n.category === category
     const matchSeg = !segment || n.tags?.includes(segment) || n.title?.includes(segment)
     const matchSearch = n.title?.toLowerCase().includes(search.toLowerCase())
-    const matchFrom = !dateFrom || new Date(n.published_at) >= new Date(dateFrom)
-    const matchTo = !dateTo || new Date(n.published_at) <= new Date(dateTo + 'T23:59:59')
     const matchSource = sourceType === '전체' || n.source?.includes(SOURCE_MAP[sourceType])
-    return matchCat && matchSeg && matchSearch && matchFrom && matchTo && matchSource
+    const dateVal = n.collected_at || n.published_at || ''
+    const matchDate = dateVal >= newsFrom && dateVal <= newsTo
+    return matchCat && matchSeg && matchSearch && matchSource && matchDate
   })
 
+  const { from: streamFrom, to: streamTo } = getDateFilter(dateMode, selectedDate, rangeFrom, rangeTo)
   const filteredStreams = streams.filter(s => {
     const matchCat = streamCategory === '전체' || s.category === streamCategory
     const matchPlatform = streamPlatform === '전체' || s.platform === streamPlatform
     const matchSearch = s.title?.toLowerCase().includes(streamSearch.toLowerCase()) || s.channel_name?.toLowerCase().includes(streamSearch.toLowerCase())
     const matchType = streamType === '전체' || (streamType === '생방송' && s.is_live) || (streamType === 'VOD' && !s.is_live)
     const matchSeg = !streamSegment || s.tags?.includes(streamSegment) || s.title?.includes(streamSegment)
-    return matchCat && matchPlatform && matchSearch && matchType && matchSeg
+    const dateVal = s.started_at || ''
+    const matchDate = dateVal >= streamFrom && dateVal <= streamTo
+    return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate
   })
 
   const currentKeywords = COMM_KEYWORDS[commKeyword] || []
   const keywordPosts = posts.filter(p => currentKeywords.some(kw => p.keyword === kw || p.title?.includes(kw)))
 
+  const { from: postFrom, to: postTo } = getDateFilter(dateMode, selectedDate, rangeFrom, rangeTo)
   const filteredPosts = keywordPosts.filter(p => {
     const matchSentiment = commSentiment === '전체' || p.sentiment === commSentiment
     const matchCommunity = commCommunity === '전체' || p.community === commCommunity
     const matchSearch = p.title?.toLowerCase().includes(commSearch.toLowerCase())
-    return matchSentiment && matchCommunity && matchSearch
+    const dateVal = p.collected_at || ''
+    const matchDate = dateVal >= postFrom && dateVal <= postTo
+    return matchSentiment && matchCommunity && matchSearch && matchDate
   })
 
   const categoryCount = ['자사', '경쟁사', '업계'].map(cat => ({
@@ -156,6 +170,40 @@ export default function Home() {
           <button onClick={() => setActiveTab('news')} className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'news' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'}`}>📰 뉴스 · 블로그</button>
           <button onClick={() => setActiveTab('streams')} className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'streams' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'}`}>🎥 방송 · 영상</button>
           <button onClick={() => setActiveTab('community')} className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'community' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'}`}>💬 커뮤니티 리포트</button>
+        </div>
+
+        {/* 날짜 필터 */}
+        <div className="flex flex-wrap items-center gap-3 mb-6 bg-gray-800 p-4 rounded-2xl border border-gray-700">
+          <div className="flex gap-1 bg-gray-700 p-1 rounded-lg">
+            <button onClick={() => setDateMode('single')} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${dateMode === 'single' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'}`}>📅 날짜 선택</button>
+            <button onClick={() => setDateMode('range')} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${dateMode === 'range' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'}`}>📆 기간 선택</button>
+          </div>
+          <div className="flex gap-1">
+            {[{label:'오늘', days:0},{label:'3일간', days:3},{label:'7일간', days:7}].map(({label, days}) => {
+              const today = new Date().toISOString().split('T')[0];
+              const d = new Date(); d.setDate(d.getDate() - days);
+              const dateStr = d.toISOString().split('T')[0];
+              return (
+                <button key={label} onClick={() => {
+                  if (days === 0) {
+                    setDateMode('single'); setSelectedDate(today);
+                  } else {
+                    setDateMode('range'); setRangeFrom(dateStr); setRangeTo(today);
+                  }
+                }} className="px-3 py-1.5 bg-gray-700 text-gray-300 rounded-lg text-xs hover:bg-gray-600 transition-colors">{label}</button>
+              )
+            })}
+          </div>
+          {dateMode === 'single' ? (
+            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-gray-700 text-white px-3 py-2 rounded-lg outline-none border border-gray-600 text-sm" />
+          ) : (
+            <div className="flex items-center gap-2">
+              <input type="date" value={rangeFrom} onChange={e => setRangeFrom(e.target.value)} className="bg-gray-700 text-white px-3 py-2 rounded-lg outline-none border border-gray-600 text-sm" />
+              <span className="text-gray-500">~</span>
+              <input type="date" value={rangeTo} onChange={e => setRangeTo(e.target.value)} className="bg-gray-700 text-white px-3 py-2 rounded-lg outline-none border border-gray-600 text-sm" />
+            </div>
+          )}
+          <span className="text-xs text-gray-500 ml-auto">{dateMode === 'single' ? selectedDate : `${rangeFrom} ~ ${rangeTo}`}</span>
         </div>
 
         {loading ? (
@@ -243,11 +291,8 @@ export default function Home() {
               </div>
               <div className="flex gap-3 flex-wrap">
                 <input type="text" placeholder="뉴스 검색..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 min-w-48 bg-gray-700 text-white px-4 py-2 rounded-lg outline-none border border-gray-600 focus:border-blue-500 text-sm" />
-                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-gray-700 text-white px-3 py-2 rounded-lg outline-none border border-gray-600 text-sm" />
-                <span className="text-gray-500 self-center">~</span>
-                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-gray-700 text-white px-3 py-2 rounded-lg outline-none border border-gray-600 text-sm" />
-                {(dateFrom || dateTo || search || segment || sourceType !== '전체') && (
-                  <button onClick={() => { setSearch(''); setDateFrom(''); setDateTo(''); setSegment(''); setSourceType('전체') }} className="px-3 py-2 bg-gray-700 text-gray-300 rounded-lg text-sm hover:bg-gray-600">초기화</button>
+                {(search || segment || sourceType !== '전체') && (
+                  <button onClick={() => { setSearch(''); setSegment(''); setSourceType('전체') }} className="px-3 py-2 bg-gray-700 text-gray-300 rounded-lg text-sm hover:bg-gray-600">초기화</button>
                 )}
               </div>
               <p className="text-gray-500 text-xs mt-3">{filteredNews.length}건 표시 중</p>
