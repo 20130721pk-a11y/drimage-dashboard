@@ -607,6 +607,135 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* 방송 하이라이트 */}
+                {(() => {
+                  const topStream = filteredStreams.filter(s=>s.is_live)[0] || filteredStreams[0]
+                  if (!topStream) return null
+                  return (
+                    <div className="mb-6 rounded-2xl overflow-hidden border border-red-500/30 bg-gradient-to-r from-red-950/50 via-gray-900 to-gray-900 p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-red-500 text-white">🔴 TOP 방송</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <a href={topStream.url} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-base hover:text-red-300 transition-colors line-clamp-1">{topStream.title}</a>
+                          <p className="text-gray-400 text-sm mt-1">{topStream.channel_name} · <span style={{color:PLATFORM_COLORS[topStream.platform]}}>{topStream.platform}</span></p>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <p className="text-xs text-gray-500">{periodLabel} 수집</p>
+                          <p className="text-2xl font-bold text-red-400">{filteredStreams.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
+                          <p className="text-xs text-gray-500 mt-1">🔴 라이브 {filteredStreams.filter(s=>s.is_live).length}건</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-red-500/20 flex gap-4">
+                        {['자사','경쟁사','업계'].map(cat => (
+                          <button key={cat} onClick={() => handleStreamClick(cat)} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105" style={{backgroundColor:COLORS[cat]+'22', color:COLORS[cat], border:`1px solid ${COLORS[cat]}44`}}>
+                            {cat} <span className="font-bold">{filteredStreams.filter(s=>s.category===cat).length}건</span>
+                          </button>
+                        ))}
+                        <div className="ml-auto flex gap-3">
+                          {['유튜브','치지직','SOOP'].map(p => (
+                            <button key={p} onClick={() => handleStreamClick(undefined, p)} className="text-xs px-2 py-1 rounded-lg transition-all hover:scale-105" style={{backgroundColor:PLATFORM_COLORS[p]+'22', color:PLATFORM_COLORS[p]}}>
+                              {p} {filteredStreams.filter(s=>s.platform===p).length}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* 방송 시각화 섹션 */}
+                <div className="grid grid-cols-12 gap-4 mb-6">
+                  {/* 7일간 플랫폼별 추이 */}
+                  <div className="col-span-5 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">📈 7일간 플랫폼별 추이</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={Array.from({length:7},(_,i)=>{
+                        const d=new Date(); d.setDate(d.getDate()-(6-i))
+                        const ds=d.toISOString().split('T')[0]
+                        return {
+                          date:`${d.getMonth()+1}/${d.getDate()}`,
+                          유튜브: streams.filter(s=>s.platform==='유튜브'&&(s.started_at||'').startsWith(ds)).length,
+                          치지직: streams.filter(s=>s.platform==='치지직'&&(s.started_at||'').startsWith(ds)).length,
+                        }
+                      })}>
+                        <defs>
+                          <linearGradient id="gradYT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradCZ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                        <Area type="monotone" dataKey="유튜브" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradYT)"/>
+                        <Area type="monotone" dataKey="치지직" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradCZ)"/>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      {['유튜브','치지직'].map(p=><div key={p} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:PLATFORM_COLORS[p]}}></div><span className="text-xs text-gray-500">{p}</span></div>)}
+                    </div>
+                  </div>
+
+                  {/* 카테고리별 라이브 vs VOD */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">📊 카테고리별 라이브 vs VOD</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={['자사','경쟁사','업계'].map(cat=>({
+                        name: cat,
+                        라이브: filteredStreams.filter(s=>s.category===cat&&s.is_live).length,
+                        VOD: filteredStreams.filter(s=>s.category===cat&&!s.is_live).length,
+                      }))} onClick={(d:any)=>{if(d?.activeLabel)handleStreamClick(d.activeLabel)}}>
+                        <XAxis dataKey="name" tick={{fill:'#9ca3af',fontSize:11}} axisLine={false} tickLine={false}/>
+                        <YAxis hide/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                        <Bar dataKey="라이브" stackId="a" fill="#ef4444" radius={[0,0,0,0]}/>
+                        <Bar dataKey="VOD" stackId="a" fill="#6366f1" radius={[4,4,0,0]}/>
+                        <Legend wrapperStyle={{fontSize:'11px'}}/>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* 시간대별 방송량 히트맵 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 방송량</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    {(() => {
+                      const hourly = Array.from({length:24},(_,h)=>({
+                        h, count: filteredStreams.filter(s=>{
+                          const d=s.started_at; return d&&new Date(d).getHours()===h
+                        }).length
+                      }))
+                      const max = Math.max(...hourly.map(x=>x.count),1)
+                      const peak = hourly.reduce((a,b)=>a.count>b.count?a:b)
+                      return (
+                        <>
+                          <div className="grid grid-cols-6 gap-1 mb-2">
+                            {hourly.map(h=>{
+                              const intensity=h.count/max
+                              return (
+                                <div key={h.h} className="flex flex-col items-center gap-1">
+                                  <div className="w-full h-8 rounded" style={{backgroundColor:intensity>0?`rgba(239,68,68,${0.15+intensity*0.85})`:'#1f2937'}} title={`${h.h}시 ${h.count}건`}></div>
+                                  {h.h%4===0&&<span className="text-xs text-gray-600">{h.h}</span>}
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <div className="mt-2 text-center">
+                            <span className="text-xs text-gray-500">피크: {peak.h}시 ({peak.count}건)</span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+
                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4" ref={listRef}>
                   <div className="flex flex-wrap gap-2 items-center">
                     <div className="flex gap-1">
@@ -700,11 +829,47 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* 커뮤니티 하이라이트 */}
+                {(() => {
+                  const topPost = [...dateFilteredKeywordPosts].sort((a,b)=>(b.views||0)-(a.views||0))[0]
+                  if (!topPost) return null
+                  return (
+                    <div className="mb-6 rounded-2xl overflow-hidden border border-indigo-500/30 bg-gradient-to-r from-indigo-950/80 via-gray-900 to-gray-900 p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <span className="text-xs font-bold px-3 py-1.5 rounded-full text-white" style={{backgroundColor:SENTIMENT_COLORS[topPost.sentiment]}}>
+                            🔥 {topPost.sentiment === '긍정' ? '😊' : topPost.sentiment === '부정' ? '😠' : '😐'} TOP 게시글
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <a href={topPost.url} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-base hover:text-indigo-300 transition-colors line-clamp-1">{topPost.title}</a>
+                          <p className="text-gray-400 text-sm mt-1">{topPost.community} · {topPost.sentiment_reason}</p>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <p className="text-xs text-gray-500">{periodLabel} 수집</p>
+                          <p className="text-2xl font-bold text-indigo-400">{dateFilteredKeywordPosts.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
+                          {topPost.views>0 && <p className="text-xs text-gray-500 mt-1">👀 {topPost.views.toLocaleString()}</p>}
+                        </div>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-indigo-500/20 flex gap-2 flex-wrap">
+                        {['긍정','부정','중립'].map(s=>(
+                          <button key={s} onClick={()=>handleCommClick(s)} className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105" style={{backgroundColor:SENTIMENT_COLORS[s]+'22',color:SENTIMENT_COLORS[s],border:`1px solid ${SENTIMENT_COLORS[s]}44`}}>
+                            {s==='긍정'?'😊':s==='부정'?'😠':'😐'} {s} <span className="font-bold">{sentimentCount.find(x=>x.name===s)?.value||0}건</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 {/* 2번째 row */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
                   {/* 커뮤니티별 언급량 */}
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-3">커뮤니티별 언급량</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">커뮤니티별 언급량</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
                     <ResponsiveContainer width="100%" height={140}>
                       <BarChart data={commCount} onClick={(d:any)=>{if(d?.activeLabel)handleCommClick(undefined,d.activeLabel)}}>
                         <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -719,7 +884,7 @@ export default function Home() {
 
                   {/* 자사 vs 경쟁작 */}
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-3">🆚 자사 vs 경쟁작 감성</p>
+                    <div className="flex items-center justify-between mb-3"><p className="text-xs text-gray-500 font-medium">🆚 자사 vs 경쟁작 감성</p><p className="text-xs text-gray-600">{periodLabel} 기준</p></div>
                     <ResponsiveContainer width="100%" height={140}>
                       <BarChart data={vsData}>
                         <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -734,7 +899,7 @@ export default function Home() {
 
                   {/* 긍정/부정 요약 */}
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-4">감성 요약</p>
+                    <div className="flex items-center justify-between mb-4"><p className="text-xs text-gray-500 font-medium">감성 요약</p><p className="text-xs text-gray-600">{periodLabel} 기준</p></div>
                     <div className="space-y-3">
                       <div>
                         <div className="flex justify-between text-xs mb-1">
@@ -768,6 +933,135 @@ export default function Home() {
                 </div>
 
                 {/* 필터 */}
+                {/* 방송 하이라이트 */}
+                {(() => {
+                  const topStream = filteredStreams.filter(s=>s.is_live)[0] || filteredStreams[0]
+                  if (!topStream) return null
+                  return (
+                    <div className="mb-6 rounded-2xl overflow-hidden border border-red-500/30 bg-gradient-to-r from-red-950/50 via-gray-900 to-gray-900 p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-red-500 text-white">🔴 TOP 방송</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <a href={topStream.url} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-base hover:text-red-300 transition-colors line-clamp-1">{topStream.title}</a>
+                          <p className="text-gray-400 text-sm mt-1">{topStream.channel_name} · <span style={{color:PLATFORM_COLORS[topStream.platform]}}>{topStream.platform}</span></p>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <p className="text-xs text-gray-500">{periodLabel} 수집</p>
+                          <p className="text-2xl font-bold text-red-400">{filteredStreams.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
+                          <p className="text-xs text-gray-500 mt-1">🔴 라이브 {filteredStreams.filter(s=>s.is_live).length}건</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-red-500/20 flex gap-4">
+                        {['자사','경쟁사','업계'].map(cat => (
+                          <button key={cat} onClick={() => handleStreamClick(cat)} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105" style={{backgroundColor:COLORS[cat]+'22', color:COLORS[cat], border:`1px solid ${COLORS[cat]}44`}}>
+                            {cat} <span className="font-bold">{filteredStreams.filter(s=>s.category===cat).length}건</span>
+                          </button>
+                        ))}
+                        <div className="ml-auto flex gap-3">
+                          {['유튜브','치지직','SOOP'].map(p => (
+                            <button key={p} onClick={() => handleStreamClick(undefined, p)} className="text-xs px-2 py-1 rounded-lg transition-all hover:scale-105" style={{backgroundColor:PLATFORM_COLORS[p]+'22', color:PLATFORM_COLORS[p]}}>
+                              {p} {filteredStreams.filter(s=>s.platform===p).length}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* 방송 시각화 섹션 */}
+                <div className="grid grid-cols-12 gap-4 mb-6">
+                  {/* 7일간 플랫폼별 추이 */}
+                  <div className="col-span-5 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">📈 7일간 플랫폼별 추이</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={Array.from({length:7},(_,i)=>{
+                        const d=new Date(); d.setDate(d.getDate()-(6-i))
+                        const ds=d.toISOString().split('T')[0]
+                        return {
+                          date:`${d.getMonth()+1}/${d.getDate()}`,
+                          유튜브: streams.filter(s=>s.platform==='유튜브'&&(s.started_at||'').startsWith(ds)).length,
+                          치지직: streams.filter(s=>s.platform==='치지직'&&(s.started_at||'').startsWith(ds)).length,
+                        }
+                      })}>
+                        <defs>
+                          <linearGradient id="gradYT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradCZ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                        <Area type="monotone" dataKey="유튜브" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradYT)"/>
+                        <Area type="monotone" dataKey="치지직" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradCZ)"/>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      {['유튜브','치지직'].map(p=><div key={p} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:PLATFORM_COLORS[p]}}></div><span className="text-xs text-gray-500">{p}</span></div>)}
+                    </div>
+                  </div>
+
+                  {/* 카테고리별 라이브 vs VOD */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">📊 카테고리별 라이브 vs VOD</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={['자사','경쟁사','업계'].map(cat=>({
+                        name: cat,
+                        라이브: filteredStreams.filter(s=>s.category===cat&&s.is_live).length,
+                        VOD: filteredStreams.filter(s=>s.category===cat&&!s.is_live).length,
+                      }))} onClick={(d:any)=>{if(d?.activeLabel)handleStreamClick(d.activeLabel)}}>
+                        <XAxis dataKey="name" tick={{fill:'#9ca3af',fontSize:11}} axisLine={false} tickLine={false}/>
+                        <YAxis hide/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                        <Bar dataKey="라이브" stackId="a" fill="#ef4444" radius={[0,0,0,0]}/>
+                        <Bar dataKey="VOD" stackId="a" fill="#6366f1" radius={[4,4,0,0]}/>
+                        <Legend wrapperStyle={{fontSize:'11px'}}/>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* 시간대별 방송량 히트맵 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 방송량</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    {(() => {
+                      const hourly = Array.from({length:24},(_,h)=>({
+                        h, count: filteredStreams.filter(s=>{
+                          const d=s.started_at; return d&&new Date(d).getHours()===h
+                        }).length
+                      }))
+                      const max = Math.max(...hourly.map(x=>x.count),1)
+                      const peak = hourly.reduce((a,b)=>a.count>b.count?a:b)
+                      return (
+                        <>
+                          <div className="grid grid-cols-6 gap-1 mb-2">
+                            {hourly.map(h=>{
+                              const intensity=h.count/max
+                              return (
+                                <div key={h.h} className="flex flex-col items-center gap-1">
+                                  <div className="w-full h-8 rounded" style={{backgroundColor:intensity>0?`rgba(239,68,68,${0.15+intensity*0.85})`:'#1f2937'}} title={`${h.h}시 ${h.count}건`}></div>
+                                  {h.h%4===0&&<span className="text-xs text-gray-600">{h.h}</span>}
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <div className="mt-2 text-center">
+                            <span className="text-xs text-gray-500">피크: {peak.h}시 ({peak.count}건)</span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+
                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4" ref={listRef}>
                   <div className="flex flex-wrap gap-2 items-center">
                     <div className="flex gap-1">
