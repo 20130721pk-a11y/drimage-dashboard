@@ -361,6 +361,44 @@ export default function Home() {
     return { date: `${d.getMonth()+1}/${d.getDate()}`, 긍정: dp.filter(p => p.sentiment==='긍정').length, 부정: dp.filter(p => p.sentiment==='부정').length, 중립: dp.filter(p => p.sentiment==='중립').length }
   })
 
+  // 방송 키워드 빈도
+  const streamKeywordFreq = (() => {
+    const freq: Record<string, number> = {}
+    filteredStreams.forEach(s => {
+      (s.tags || []).forEach(tag => {
+        if (tag.length >= 2) freq[tag] = (freq[tag] || 0) + 1
+      })
+      // 제목에서도 추출
+      const words: string[] = s.title?.match(/[가-힣a-zA-Z]{2,}/g) || []
+      words.forEach(w => {
+        if (!['라이브','방송','게임','live','game','stream'].includes(w.toLowerCase()))
+          freq[w] = (freq[w] || 0) + 1
+      })
+    })
+    return Object.entries(freq).map(([name, count]) => ({ name, count, cat: '방송' })).sort((a,b)=>b.count-a.count).slice(0,20)
+  })()
+
+  // 인기 채널 TOP 5
+  const topChannels = (() => {
+    const freq: Record<string, {count:number, platform:string, live:number}> = {}
+    filteredStreams.forEach(s => {
+      if (!s.channel_name) return
+      if (!freq[s.channel_name]) freq[s.channel_name] = { count:0, platform:s.platform, live:0 }
+      freq[s.channel_name].count++
+      if (s.is_live) freq[s.channel_name].live++
+    })
+    return Object.entries(freq).map(([name, v]) => ({ name, ...v })).sort((a,b)=>b.count-a.count).slice(0,5)
+  })()
+
+  // 신규 채널 (최근 7일 내 처음 등장)
+  const recentChannels = new Set(filteredStreams.map(s=>s.channel_name).filter(Boolean))
+  const allChannels = new Set(streams.map(s=>s.channel_name).filter(Boolean))
+  const prevChannels = new Set(streams.filter(s=>{
+    const d = s.started_at || ''
+    return d < df
+  }).map(s=>s.channel_name).filter(Boolean))
+  const newChannels = [...recentChannels].filter(c => !prevChannels.has(c))
+
   const posRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[0].value / dateFilteredKeywordPosts.length * 100) : 0
   const negRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[1].value / dateFilteredKeywordPosts.length * 100) : 0
 
@@ -770,48 +808,58 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 방송 하이라이트 */}
-                {(() => {
-                  const topStream = filteredStreams.filter(s=>s.is_live)[0] || filteredStreams[0]
-                  if (!topStream) return null
-                  return (
-                    <div className="mb-6 rounded-2xl overflow-hidden border border-red-500/30 bg-gradient-to-r from-red-950/50 via-gray-900 to-gray-900 p-5">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-red-500 text-white">🔴 TOP 방송</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <a href={topStream.url} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-base hover:text-red-300 transition-colors line-clamp-1">{topStream.title}</a>
-                          <p className="text-gray-400 text-sm mt-1">{topStream.channel_name} · <span style={{color:PLATFORM_COLORS[topStream.platform]}}>{topStream.platform}</span></p>
-                        </div>
-                        <div className="flex-shrink-0 text-right">
-                          <p className="text-xs text-gray-500">{periodLabel} 수집</p>
-                          <p className="text-2xl font-bold text-red-400">{filteredStreams.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
-                          <p className="text-xs text-gray-500 mt-1">🔴 라이브 {filteredStreams.filter(s=>s.is_live).length}건</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-red-500/20 flex gap-4">
-                        {['자사','경쟁사','업계'].map(cat => (
-                          <button key={cat} onClick={() => handleStreamClick(cat)} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105" style={{backgroundColor:COLORS[cat]+'22', color:COLORS[cat], border:`1px solid ${COLORS[cat]}44`}}>
-                            {cat} <span className="font-bold">{filteredStreams.filter(s=>s.category===cat).length}건</span>
-                          </button>
-                        ))}
-                        <div className="ml-auto flex gap-3">
-                          {['유튜브','치지직','SOOP'].map(p => (
-                            <button key={p} onClick={() => handleStreamClick(undefined, p)} className="text-xs px-2 py-1 rounded-lg transition-all hover:scale-105" style={{backgroundColor:PLATFORM_COLORS[p]+'22', color:PLATFORM_COLORS[p]}}>
-                              {p} {filteredStreams.filter(s=>s.platform===p).length}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })()}
-
                 {/* 방송 시각화 섹션 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
+                  {/* 키워드 워드클라우드 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">☁️ 방송 키워드</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <WordCloud words={streamKeywordFreq} />
+                  </div>
+
+                  {/* 인기 채널 TOP 5 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">🏆 인기 채널 TOP 5</p>
+                      <p className="text-xs text-gray-600">{periodLabel}</p>
+                    </div>
+                    <div className="space-y-2">
+                      {topChannels.map((ch, i) => (
+                        <div key={ch.name} className="flex items-center gap-3">
+                          <span className={`text-xs font-bold w-5 text-center ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-xs font-medium truncate">{ch.name}</p>
+                            <p className="text-xs" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-300 font-medium">{ch.count}건</p>
+                            {ch.live > 0 && <p className="text-xs text-red-400">🔴 {ch.live}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 신규 채널 */}
+                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <p className="text-xs text-gray-500 font-medium mb-3">✨ 신규 채널</p>
+                    <p className="text-4xl font-bold text-emerald-400 mb-1">{newChannels.length}<span className="text-lg text-gray-500 font-normal ml-1">개</span></p>
+                    <p className="text-xs text-gray-600 mb-4">{periodLabel} 기간 첫 등장</p>
+                    <div className="space-y-1.5">
+                      {newChannels.slice(0,4).map(ch => (
+                        <div key={ch} className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                          <span className="text-xs text-gray-400 truncate">{ch}</span>
+                        </div>
+                      ))}
+                      {newChannels.length > 4 && <p className="text-xs text-gray-600">+{newChannels.length-4}개 더</p>}
+                    </div>
+                  </div>
+
                   {/* 7일간 플랫폼별 추이 */}
-                  <div className="col-span-5 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">📈 7일간 플랫폼별 추이</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
@@ -1136,8 +1184,56 @@ export default function Home() {
 
                 {/* 방송 시각화 섹션 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
+                  {/* 키워드 워드클라우드 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">☁️ 방송 키워드</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <WordCloud words={streamKeywordFreq} />
+                  </div>
+
+                  {/* 인기 채널 TOP 5 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">🏆 인기 채널 TOP 5</p>
+                      <p className="text-xs text-gray-600">{periodLabel}</p>
+                    </div>
+                    <div className="space-y-2">
+                      {topChannels.map((ch, i) => (
+                        <div key={ch.name} className="flex items-center gap-3">
+                          <span className={`text-xs font-bold w-5 text-center ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-xs font-medium truncate">{ch.name}</p>
+                            <p className="text-xs" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-300 font-medium">{ch.count}건</p>
+                            {ch.live > 0 && <p className="text-xs text-red-400">🔴 {ch.live}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 신규 채널 */}
+                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <p className="text-xs text-gray-500 font-medium mb-3">✨ 신규 채널</p>
+                    <p className="text-4xl font-bold text-emerald-400 mb-1">{newChannels.length}<span className="text-lg text-gray-500 font-normal ml-1">개</span></p>
+                    <p className="text-xs text-gray-600 mb-4">{periodLabel} 기간 첫 등장</p>
+                    <div className="space-y-1.5">
+                      {newChannels.slice(0,4).map(ch => (
+                        <div key={ch} className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                          <span className="text-xs text-gray-400 truncate">{ch}</span>
+                        </div>
+                      ))}
+                      {newChannels.length > 4 && <p className="text-xs text-gray-600">+{newChannels.length-4}개 더</p>}
+                    </div>
+                  </div>
+
                   {/* 7일간 플랫폼별 추이 */}
-                  <div className="col-span-5 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">📈 7일간 플랫폼별 추이</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
