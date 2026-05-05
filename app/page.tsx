@@ -129,35 +129,42 @@ export default function Home() {
     return matchSentiment && matchCommunity && matchSearch && dateVal >= df && dateVal <= dt
   })
 
-  // 뉴스 통계
-  const { from: df2, to: dt2 } = getDateFilter(dateMode, selectedDate, rangeFrom, rangeTo)
+  // 뉴스 통계 - 모두 filteredNews 기준으로 통일
+  const yestFrom = yesterday + 'T00:00:00'
+  const yestTo = yesterday + 'T23:59:59'
   const newsCatCount = ['자사', '경쟁사', '업계'].map(cat => {
-    const total = news.filter(n => n.category === cat).length
-    const todayCnt = news.filter(n => {
-      if (n.category !== cat) return false
-      const dv = n.published_at || n.collected_at || ''
-      return dv >= df2 && dv <= dt2
-    }).length
-    const yestFrom = yesterday + 'T00:00:00'
-    const yestTo = yesterday + 'T23:59:59'
+    const periodCnt = filteredNews.filter(n => n.category === cat).length
     const yestCnt = news.filter(n => {
       if (n.category !== cat) return false
       const dv = n.published_at || n.collected_at || ''
       return dv >= yestFrom && dv <= yestTo
     }).length
-    return { name: cat, total, todayCnt, diff: todayCnt - yestCnt, segments: SEGMENTS[cat].map(seg => ({ name: seg, value: news.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length })) }
+    return {
+      name: cat,
+      total: news.filter(n => n.category === cat).length,
+      todayCnt: periodCnt,
+      diff: periodCnt - yestCnt,
+      segments: SEGMENTS[cat].map(seg => ({
+        name: seg,
+        value: filteredNews.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length
+      }))
+    }
   })
-  const newsSegData = Object.entries(SEGMENTS).flatMap(([cat, segs]) => segs.map(seg => ({ name: seg, value: news.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length, cat })))
+  const newsSegData = Object.entries(SEGMENTS).flatMap(([cat, segs]) => segs.map(seg => ({
+    name: seg,
+    value: filteredNews.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length,
+    cat
+  })))
   const news7d = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i))
     const ds = d.toISOString().split('T')[0]
     return { date: `${d.getMonth()+1}/${d.getDate()}`, count: news.filter(n => (n.collected_at||'').startsWith(ds)).length }
   })
 
-  // 키워드 빈도 분석
+  // 키워드 빈도 분석 - filteredNews 기준
   const keywordFreq = (() => {
     const freq: Record<string, {count: number, cat: string}> = {}
-    news.forEach(n => {
+    filteredNews.forEach(n => {
       (n.tags || []).forEach(tag => {
         if (!freq[tag]) freq[tag] = { count: 0, cat: n.category }
         freq[tag].count++
@@ -166,10 +173,10 @@ export default function Home() {
     return Object.entries(freq).map(([name, {count, cat}]) => ({ name, count, cat })).sort((a,b) => b.count - a.count).slice(0, 20)
   })()
 
-  // 소스별 비중
+  // 소스별 비중 - filteredNews 기준
   const sourceFreq = (() => {
     const freq: Record<string, number> = {}
-    news.forEach(n => {
+    filteredNews.forEach(n => {
       const src = n.source?.includes('Google News') ? '구글 뉴스'
         : n.source?.includes('네이버블로그') ? '네이버 블로그'
         : n.source?.includes('네이버') ? '네이버 뉴스'
@@ -181,45 +188,43 @@ export default function Home() {
     return Object.entries(freq).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value)
   })()
 
-  // 경쟁사 비교
+  // 경쟁사 비교 - filteredNews 기준
   const competitorData = SEGMENTS['경쟁사'].map(comp => ({
     name: comp,
-    뉴스: news.filter(n => n.category === '경쟁사' && (n.tags?.includes(comp) || n.title?.includes(comp))).length,
+    뉴스: filteredNews.filter(n => n.category === '경쟁사' && (n.tags?.includes(comp) || n.title?.includes(comp))).length,
   })).sort((a,b) => b.뉴스 - a.뉴스)
 
-  // 시간대별 발행량
+  // 시간대별 발행량 - filteredNews 기준
   const hourlyNews = Array.from({ length: 24 }, (_, h) => ({
     hour: `${h}시`,
     h,
-    count: news.filter(n => {
+    count: filteredNews.filter(n => {
       const d = n.published_at || n.collected_at
       return d && new Date(d).getHours() === h
     }).length
   }))
 
-  // 오늘의 하이라이트
-  const todayNews = news.filter(n => (n.collected_at||'').startsWith(today))
-  const highlightNews = todayNews.sort((a,b) => {
-    const aScore = (a.tags?.length || 0)
-    const bScore = (b.tags?.length || 0)
-    return bScore - aScore
-  })[0]
+  // 하이라이트 - filteredNews 기준
+  const highlightNews = [...filteredNews].sort((a,b) => (b.tags?.length||0) - (a.tags?.length||0))[0]
   const topKeywords = keywordFreq.slice(0, 6)
+  
+  // 기간 레이블
+  const periodLabel = dateMode === 'single' ? selectedDate : `${rangeFrom} ~ ${rangeTo}`
 
   // 방송 통계
   const streamPlatCount = ['유튜브', '치지직', 'SOOP'].map(p => ({
     name: p,
-    value: streams.filter(s => s.platform === p && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length,
-    live: streams.filter(s => s.platform === p && s.is_live && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length,
-    vod: streams.filter(s => s.platform === p && !s.is_live && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length,
+    value: streams.filter(s => s.platform === p && (s.started_at||'') >= df && (s.started_at||'') <= dt).length,
+    live: streams.filter(s => s.platform === p && s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length,
+    vod: streams.filter(s => s.platform === p && !s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length,
   }))
-  const liveCount = streams.filter(s => s.is_live && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length
-  const streamCatCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat && (s.started_at||'') >= df2 && (s.started_at||'') <= dt2).length }))
+  const liveCount = streams.filter(s => s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length
+  const streamCatCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat && (s.started_at||'') >= df && (s.started_at||'') <= dt).length }))
 
   // 커뮤니티 통계
   const dateFilteredKeywordPosts = keywordPosts.filter(p => {
     const dv = p.posted_at || p.collected_at || ''
-    return dv >= df2 && dv <= dt2
+    return dv >= df && dv <= dt
   })
   const sentimentCount = ['긍정', '부정', '중립'].map(s => ({ name: s, value: dateFilteredKeywordPosts.filter(p => p.sentiment === s).length }))
   const commCount = Object.keys(COMMUNITY_COLORS).map(c => ({ name: c, value: dateFilteredKeywordPosts.filter(p => p.community === c).length })).filter(c => c.value > 0)
@@ -299,7 +304,7 @@ export default function Home() {
                         </span>
                       </div>
                       <p className="text-4xl font-bold mb-1 group-hover:opacity-80" style={{ color: COLORS[c.name] }}>{c.todayCnt}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
-                      <p className="text-xs text-gray-600">누적 {c.total}건</p>
+                      <p className="text-xs text-gray-600">전체 누적 {c.total}건</p>
                       <div className="mt-3 space-y-1">
                         {c.segments.slice(0,3).map(seg => (
                           <div key={seg.name} className="flex items-center gap-2">
@@ -378,8 +383,8 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex-shrink-0 text-right">
-                        <p className="text-xs text-gray-500">오늘 수집</p>
-                        <p className="text-2xl font-bold text-indigo-400">{todayNews.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
+                        <p className="text-xs text-gray-500">{periodLabel} 수집</p>
+                        <p className="text-2xl font-bold text-indigo-400">{filteredNews.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-indigo-500/20">
