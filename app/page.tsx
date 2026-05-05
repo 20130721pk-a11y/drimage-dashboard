@@ -296,7 +296,7 @@ export default function Home() {
                 <h2 className="text-sm font-semibold text-gray-400 mb-4">플랫폼별 비율</h2>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={streamPlatformCount} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, value }) => `${name} ${value}`}>
+                    <Pie data={streamPlatformCount} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, value }) => `${name} ${value}`} onClick={(d: any) => setStreamPlatform(d.name)} style={{ cursor: 'pointer' }}>
                       {streamPlatformCount.map((entry) => <Cell key={entry.name} fill={PLATFORM_COLORS[entry.name]} />)}
                     </Pie>
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
@@ -306,7 +306,7 @@ export default function Home() {
               <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
                 <h2 className="text-sm font-semibold text-gray-400 mb-4">카테고리별 비율</h2>
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={streamCategoryCount}>
+                  <BarChart data={streamCategoryCount} onClick={(d: any) => { if (d?.activeLabel) { setStreamCategory(d.activeLabel); setStreamSegment('') }}}>
                     <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} />
                     <YAxis hide />
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
@@ -399,7 +399,7 @@ export default function Home() {
                 <h2 className="text-sm font-semibold text-gray-400 mb-4">감성 비율</h2>
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
-                    <Pie data={sentimentCount} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value" label={({ name, value }) => `${name} ${value}`}>
+                    <Pie data={sentimentCount} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value" label={({ name, value }) => `${name} ${value}`} onClick={(d: any) => setCommSentiment(d.name)} style={{ cursor: 'pointer' }}>
                       {sentimentCount.map((entry) => <Cell key={entry.name} fill={SENTIMENT_COLORS[entry.name]} />)}
                     </Pie>
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
@@ -409,7 +409,7 @@ export default function Home() {
               <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
                 <h2 className="text-sm font-semibold text-gray-400 mb-4">커뮤니티별 언급량</h2>
                 <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={communityCount}>
+                  <BarChart data={communityCount} onClick={(d: any) => { if (d?.activeLabel) setCommCommunity(d.activeLabel) }}>
                     <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 10 }} />
                     <YAxis hide />
                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
