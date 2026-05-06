@@ -119,7 +119,8 @@ export default function Home() {
 
   useEffect(() => { fetchAll() }, [])
   // 날짜 변경 시 또는 초기 로딩 완료 시 키워드 재조회
-  useEffect(() => { if (!loading) fetchKeywords(df, dt) }, [dateMode, selectedDate, rangeFrom, rangeTo, loading]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchKeywords(df, dt) }, [dateMode, selectedDate, rangeFrom, rangeTo]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!loading) fetchKeywords(df, dt) }, [loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchAll() {
     setLoading(true)
