@@ -131,11 +131,17 @@ export default function Home() {
     setStreams(s || [])
     setPosts(p || [])
     const kwFreq: Record<string, {count:number, cat:string}> = {}
+    const kwNewsMap: Record<string, string[]> = {}
     ;(kw || []).forEach((r: any) => {
       if (!kwFreq[r.keyword]) kwFreq[r.keyword] = { count: 0, cat: r.category }
       kwFreq[r.keyword].count++
+      if (r.news_id) {
+        if (!kwNewsMap[r.keyword]) kwNewsMap[r.keyword] = []
+        if (!kwNewsMap[r.keyword].includes(r.news_id)) kwNewsMap[r.keyword].push(r.news_id)
+      }
     })
     setNewsKeywords(Object.entries(kwFreq).map(([keyword, {count, cat}]) => ({ keyword, count, category: cat })).sort((a,b) => b.count - a.count))
+    setKeywordNewsMap(kwNewsMap)
     setLoading(false)
   }
 
