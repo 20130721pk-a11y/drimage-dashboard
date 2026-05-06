@@ -93,7 +93,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [dateMode, setDateMode] = useState<'single' | 'range'>('range')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [rangeFrom, setRangeFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().split('T')[0] })()
+  const [rangeFrom, setRangeFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().split('T')[0] })
   const [rangeTo, setRangeTo] = useState(new Date().toISOString().split('T')[0])
   const [category, setCategory] = useState('전체')
   const [segment, setSegment] = useState('')
