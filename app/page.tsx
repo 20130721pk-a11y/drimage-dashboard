@@ -118,18 +118,31 @@ export default function Home() {
   const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { fetchAll() }, [])
+  // 날짜 변경 시 또는 초기 로딩 완료 시 키워드 재조회
+  useEffect(() => { if (!loading) fetchKeywords(df, dt) }, [df, dt, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: n }, { data: s }, { data: p }, { data: kw }] = await Promise.all([
+    const [{ data: n }, { data: s }, { data: p }] = await Promise.all([
       supabase.from('news').select('*').order('published_at', { ascending: false }).limit(1000),
       supabase.from('streams').select('*').order('started_at', { ascending: false }).limit(500),
       supabase.from('community_posts').select('*').order('collected_at', { ascending: false }).limit(2000),
-      supabase.from('news_keywords').select('news_id, keyword, category').order('collected_at', { ascending: false }).limit(5000),
     ])
     setNews(n || [])
     setStreams(s || [])
     setPosts(p || [])
+    setLoading(false)
+  }
+
+  // 선택한 날짜 범위의 키워드만 조회 - 날짜 변경 시 재호출됨
+  async function fetchKeywords(from: string, to: string) {
+    const { data: kw } = await supabase
+      .from('news_keywords')
+      .select('news_id, keyword, category')
+      .gte('collected_at', from)
+      .lte('collected_at', to)
+      .order('collected_at', { ascending: false })
+      .limit(5000)
     const kwFreq: Record<string, {count:number, cat:string}> = {}
     const kwNewsMap: Record<string, string[]> = {}
     ;(kw || []).forEach((r: any) => {
@@ -142,7 +155,6 @@ export default function Home() {
     })
     setNewsKeywords(Object.entries(kwFreq).map(([keyword, {count, cat}]) => ({ keyword, count, category: cat })).sort((a,b) => b.count - a.count))
     setKeywordNewsMap(kwNewsMap)
-    setLoading(false)
   }
 
   function scrollToList() {
