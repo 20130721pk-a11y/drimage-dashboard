@@ -186,8 +186,7 @@ export default function Home() {
     const matchSource = sourceType === '전체' || n.source?.includes(SOURCE_MAP[sourceType])
     const matchKeyword = !selectedKeyword || (keywordNewsMap[selectedKeyword] ? keywordNewsMap[selectedKeyword].includes(n.id) : n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword))
     const dateVal = n.published_at || n.collected_at || ''
-    const matchDate = selectedKeyword ? true : (dateVal >= df && dateVal <= dt)
-    return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && matchDate
+    return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= df && dateVal <= dt
   }), [news, category, segment, search, sourceType, selectedKeyword, df, dt])
 
   const filteredStreams = streams.filter(s => {
