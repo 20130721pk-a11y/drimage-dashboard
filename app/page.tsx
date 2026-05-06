@@ -160,7 +160,7 @@ export default function Home() {
   const today = new Date().toISOString().split('T')[0]
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
 
-  const filteredNews = news.filter(n => {
+  const filteredNews = useMemo(() => news.filter(n => {
     const matchCat = category === '전체' || n.category === category
     const matchSeg = !segment || n.tags?.includes(segment) || n.title?.includes(segment)
     const matchSearch = n.title?.toLowerCase().includes(search.toLowerCase())
@@ -168,7 +168,7 @@ export default function Home() {
     const matchKeyword = !selectedKeyword || n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword)
     const dateVal = n.published_at || n.collected_at || ''
     return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= df && dateVal <= dt
-  })
+  }), [news, category, segment, search, sourceType, selectedKeyword, df, dt])
 
   const filteredStreams = streams.filter(s => {
     const matchCat = streamCategory === '전체' || s.category === streamCategory
@@ -291,12 +291,6 @@ export default function Home() {
 
   // 급상승 키워드 (어제 대비 오늘 증가량)
   const risingKeywords = (() => {
-    const todayKw: Record<string,number> = {}
-    const yestKw: Record<string,number> = {}
-    newsKeywords.forEach(k => {
-      // news_keywords는 전체 기준이므로 날짜별로 분리 불가 - filteredNews 제목에서 추출
-    })
-    // filteredNews 제목 기반 오늘 키워드
     const todayNews2 = news.filter(n => (n.collected_at||'').startsWith(today))
     const yestNews2 = news.filter(n => (n.collected_at||'').startsWith(yesterday))
     const extract = (articles: typeof news) => {
@@ -328,7 +322,7 @@ export default function Home() {
   }))
 
   // 하이라이트 - filteredNews 기준
-  const highlightNews = [...filteredNews].sort((a,b) => (b.tags?.length||0) - (a.tags?.length||0))[0]
+  const highlightNews = [...filteredNews].sort((a,b) => { const score = (n: any) => (n.category==='자사'?100:n.category==='경쟁사'?50:10)+(n.tags?.length||0)*2; return score(b)-score(a) })[0]
   const topKeywords = keywordFreq.slice(0, 6)
   
   // 기간 레이블
