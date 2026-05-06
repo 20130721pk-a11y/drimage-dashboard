@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend, AreaChart, Area } from 'recharts'
 
@@ -66,7 +66,7 @@ function WordCloud({ words, onWordClick, selectedWord }: { words: {name: string,
   return (
     <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{overflow:'visible'}}>
       {items.map((item: any, i: number) => (
-        <g key={item.kw.name} className="cursor-pointer" style={{transition:'opacity 0.2s'}} onClick={() => {}} >
+        <g key={item.kw.name} className="cursor-pointer" style={{transition:'opacity 0.2s'}} onClick={() => onWordClick?.(item.kw.name)} >
           <rect x={item.x - item.size * item.text.length * 0.32 - 8} y={item.y - item.size/2 - 5} width={item.text.length * item.size * 0.65 + 16} height={item.size + 10} rx="4" fill={selectedWord === item.kw.name ? item.color + '44' : item.color + '22'} stroke={selectedWord === item.kw.name ? item.color : 'none'} strokeWidth="1.5" />
           <text x={item.x} y={item.y + item.size * 0.35} textAnchor="middle" fontSize={item.size} fontWeight={item.count === words[0]?.count ? 700 : item.count > words[0]?.count * 0.5 ? 600 : 400} fill={item.color} fontFamily="system-ui, sans-serif">
             {item.text}
@@ -91,9 +91,9 @@ export default function Home() {
   const [streams, setStreams] = useState<Stream[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
-  const [dateMode, setDateMode] = useState<'single' | 'range'>('single')
+  const [dateMode, setDateMode] = useState<'single' | 'range'>('range')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [rangeFrom, setRangeFrom] = useState(new Date().toISOString().split('T')[0])
+  const [rangeFrom, setRangeFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().split('T')[0] })()
   const [rangeTo, setRangeTo] = useState(new Date().toISOString().split('T')[0])
   const [category, setCategory] = useState('전체')
   const [segment, setSegment] = useState('')
@@ -484,7 +484,7 @@ export default function Home() {
                         {c.segments.slice(0,3).map(seg => (
                           <div key={seg.name} className="flex items-center gap-2">
                             <div className="h-1 rounded-full flex-1 bg-gray-700">
-                              <div className="h-1 rounded-full" style={{ width: `${c.total > 0 ? (seg.value/c.total*100) : 0}%`, backgroundColor: COLORS[seg.name] || COLORS[c.name] }}></div>
+                              <div className="h-1 rounded-full" style={{ width: `${c.total > 0 ? (seg.value/c.todayCnt*100) : 0}%`, backgroundColor: COLORS[seg.name] || COLORS[c.name] }}></div>
                             </div>
                             <span className="text-xs text-gray-500 w-16 text-right truncate">{seg.name} {seg.value}</span>
                           </div>
