@@ -110,6 +110,7 @@ export default function Home() {
   const [commSearch, setCommSearch] = useState('')
   const [newsLimit, setNewsLimit] = useState(24)
   const [newsKeywords, setNewsKeywords] = useState<NewsKeyword[]>([])
+  const [keywordNewsMap, setKeywordNewsMap] = useState<Record<string, string[]>>({})
   const [streamLimit, setStreamLimit] = useState(24)
   const [postLimit, setPostLimit] = useState(24)
   const [selectedKeyword, setSelectedKeyword] = useState<string>('')
@@ -124,7 +125,7 @@ export default function Home() {
       supabase.from('news').select('*').order('published_at', { ascending: false }).limit(1000),
       supabase.from('streams').select('*').order('started_at', { ascending: false }).limit(500),
       supabase.from('community_posts').select('*').order('collected_at', { ascending: false }).limit(2000),
-      supabase.from('news_keywords').select('keyword, category').order('collected_at', { ascending: false }).limit(5000),
+      supabase.from('news_keywords').select('news_id, keyword, category').order('collected_at', { ascending: false }).limit(5000),
     ])
     setNews(n || [])
     setStreams(s || [])
@@ -165,7 +166,7 @@ export default function Home() {
     const matchSeg = !segment || n.tags?.includes(segment) || n.title?.includes(segment)
     const matchSearch = n.title?.toLowerCase().includes(search.toLowerCase())
     const matchSource = sourceType === '전체' || n.source?.includes(SOURCE_MAP[sourceType])
-    const matchKeyword = !selectedKeyword || n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword)
+    const matchKeyword = !selectedKeyword || (keywordNewsMap[selectedKeyword] ? keywordNewsMap[selectedKeyword].includes(n.id) : n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword))
     const dateVal = n.published_at || n.collected_at || ''
     return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= df && dateVal <= dt
   }), [news, category, segment, search, sourceType, selectedKeyword, df, dt])
