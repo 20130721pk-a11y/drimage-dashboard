@@ -114,6 +114,8 @@ export default function Home() {
   const [streamLimit, setStreamLimit] = useState(24)
   const [postLimit, setPostLimit] = useState(24)
   const [selectedKeyword, setSelectedKeyword] = useState<string>('')
+  const [selectedStreamKeyword, setSelectedStreamKeyword] = useState<string>('')
+  const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -394,6 +396,15 @@ export default function Home() {
   })()
 
   // 방송 횟수 TOP 5
+  const commKeywordFreq = useMemo(() => {
+    const freq: Record<string, number> = {}
+    filteredPosts.forEach(p => {
+      const words = (p.title || '').match(/[가-힣a-zA-Z]{2,}/g) || []
+      words.forEach(w => { freq[w] = (freq[w] || 0) + 1 })
+    })
+    return Object.entries(freq).map(([name, count]) => ({ name, count, cat: '커뮤니티' })).sort((a,b) => b.count - a.count).slice(0, 20)
+  }, [filteredPosts])
+
   const topChannelsByCount = (() => {
     const freq: Record<string, {count:number, platform:string, live:number, viewers:number}> = {}
     filteredStreams.forEach(s => {
@@ -1004,6 +1015,7 @@ export default function Home() {
                       ))}
                     </div>
                     <input type="text" placeholder="검색..." value={streamSearch} onChange={e => setStreamSearch(e.target.value)} className="bg-gray-700 text-white px-3 py-1.5 rounded-lg outline-none border border-gray-600 text-xs w-40" />
+                    {selectedStreamKeyword && <button onClick={() => setSelectedStreamKeyword('')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600/30 text-indigo-300 border border-indigo-500/50">☁️ {selectedStreamKeyword} <span className="opacity-60">✕</span></button>}
                   </div>
                   <p className="text-xs text-gray-600 mt-2">{filteredStreams.length}건 표시 중</p>
                 </div>
@@ -1381,6 +1393,7 @@ export default function Home() {
                       ))}
                     </div>
                     <input type="text" placeholder="검색..." value={commSearch} onChange={e => setCommSearch(e.target.value)} className="bg-gray-700 text-white px-3 py-1.5 rounded-lg outline-none border border-gray-600 text-xs w-40" />
+                    {selectedCommKeyword && <button onClick={() => setSelectedCommKeyword('')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600/30 text-indigo-300 border border-indigo-500/50">☁️ {selectedCommKeyword} <span className="opacity-60">✕</span></button>}
                   </div>
                   <p className="text-xs text-gray-600 mt-2">{filteredPosts.length}건 표시 중</p>
                 </div>
