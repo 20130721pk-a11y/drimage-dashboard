@@ -122,6 +122,8 @@ export default function Home() {
   const [selectedKeyword, setSelectedKeyword] = useState<string>('')
   const [selectedStreamKeyword, setSelectedStreamKeyword] = useState<string>('')
   const [platformModal, setPlatformModal] = useState<string | null>(null)
+  const [coverChannelModal, setCoverChannelModal] = useState<boolean>(false)
+  const [coverageModal, setCoverageModal] = useState<string | null>(null)
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
   const listRef = useRef<HTMLDivElement>(null)
@@ -1018,7 +1020,7 @@ export default function Home() {
                   </div>
 
                   {/* ② 자사 게임 커버 채널 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700 cursor-pointer hover:border-indigo-500 transition-colors" onClick={() => setCoverChannelModal(true)}>
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">🎮 자사 게임 커버 채널</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
@@ -1104,7 +1106,7 @@ export default function Home() {
                         const total = filteredStreams.length || 1
                         const pct = Math.round(catStreams.length / total * 100)
                         return (
-                          <div key={cat}>
+                          <div key={cat} className="cursor-pointer hover:bg-gray-700/30 rounded-lg p-1 -mx-1 transition-colors" onClick={() => setCoverageModal(cat)}>
                             <div className="flex justify-between text-xs mb-1">
                               <span className="font-medium" style={{color:COLORS[cat]}}>{cat}</span>
                               <span className="text-gray-400">{catStreams.length}건 · {channels}채널 {liveCount > 0 && <span className="text-red-400">· 🔴{liveCount}</span>}</span>
@@ -1119,6 +1121,120 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {/* 자사 게임 커버 채널 모달 */}
+                {coverChannelModal && (() => {
+                  const myStreams = filteredStreams.filter(s => s.category === '자사')
+                  const channelMap: Record<string, {count:number, viewers:number, latest:string, latestTitle:string, url:string}> = {}
+                  myStreams.forEach(s => {
+                    if (!s.channel_name) return
+                    if (!channelMap[s.channel_name]) channelMap[s.channel_name] = {count:0, viewers:0, latest:'', latestTitle:'', url:s.url||''}
+                    channelMap[s.channel_name].count++
+                    channelMap[s.channel_name].viewers += s.viewer_count || 0
+                    if (!channelMap[s.channel_name].latest || (s.started_at||'') > channelMap[s.channel_name].latest) {
+                      channelMap[s.channel_name].latest = s.started_at || ''
+                      channelMap[s.channel_name].latestTitle = s.title || ''
+                      channelMap[s.channel_name].url = s.url || ''
+                    }
+                  })
+                  const channels = Object.entries(channelMap).map(([name, v]) => ({name, ...v})).sort((a,b)=>b.count-a.count)
+                  return (
+                    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setCoverChannelModal(false)}>
+                      <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+                          <div>
+                            <h3 className="text-white font-semibold">🎮 자사 게임 커버 채널</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">{channels.length}개 채널 · {periodLabel}</p>
+                          </div>
+                          <button onClick={() => setCoverChannelModal(false)} className="text-gray-500 hover:text-white text-lg">✕</button>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-3">
+                          {channels.length === 0
+                            ? <p className="text-gray-500 text-sm text-center py-8">데이터 없음</p>
+                            : channels.map((ch, i) => (
+                              <div key={ch.name} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-800 transition-colors">
+                                <span className={`text-xs font-bold w-5 text-center mt-1 flex-shrink-0 ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-white text-sm font-medium truncate">{ch.name}</p>
+                                    {ch.url && (
+                                      <a href={ch.url} target="_blank" rel="noopener noreferrer"
+                                        className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full border border-indigo-500/40 text-indigo-400 bg-indigo-500/10 hover:opacity-80"
+                                        onClick={e => e.stopPropagation()}>채널 →</a>
+                                    )}
+                                  </div>
+                                  {ch.latestTitle && <p className="text-gray-400 text-xs truncate mb-1">최근: {ch.latestTitle}</p>}
+                                  <div className="flex gap-3 text-xs text-gray-500">
+                                    <span>📺 {ch.count}회 방송</span>
+                                    {ch.viewers > 0 && <span>👁 {ch.viewers.toLocaleString()}명</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* 카테고리별 커버리지 모달 */}
+                {coverageModal && (() => {
+                  const catStreams = filteredStreams.filter(s => s.category === coverageModal)
+                  const channelMap: Record<string, {count:number, viewers:number, latest:string, latestTitle:string, url:string, platform:string}> = {}
+                  catStreams.forEach(s => {
+                    if (!s.channel_name) return
+                    if (!channelMap[s.channel_name]) channelMap[s.channel_name] = {count:0, viewers:0, latest:'', latestTitle:'', url:s.url||'', platform:s.platform||''}
+                    channelMap[s.channel_name].count++
+                    channelMap[s.channel_name].viewers += s.viewer_count || 0
+                    if (!channelMap[s.channel_name].latest || (s.started_at||'') > channelMap[s.channel_name].latest) {
+                      channelMap[s.channel_name].latest = s.started_at || ''
+                      channelMap[s.channel_name].latestTitle = s.title || ''
+                      channelMap[s.channel_name].url = s.url || ''
+                    }
+                  })
+                  const channels = Object.entries(channelMap).map(([name, v]) => ({name, ...v})).sort((a,b)=>b.count-a.count)
+                  return (
+                    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setCoverageModal(null)}>
+                      <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+                          <div>
+                            <h3 className="font-semibold" style={{color: COLORS[coverageModal]}}>⚔️ {coverageModal} 커버 채널</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">{channels.length}개 채널 · {periodLabel}</p>
+                          </div>
+                          <button onClick={() => setCoverageModal(null)} className="text-gray-500 hover:text-white text-lg">✕</button>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-3">
+                          {channels.length === 0
+                            ? <p className="text-gray-500 text-sm text-center py-8">데이터 없음</p>
+                            : channels.map((ch, i) => (
+                              <div key={ch.name} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-800 transition-colors">
+                                <span className={`text-xs font-bold w-5 text-center mt-1 flex-shrink-0 ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-white text-sm font-medium truncate">{ch.name}</p>
+                                    <span className="text-xs flex-shrink-0" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</span>
+                                    {ch.url && (
+                                      <a href={ch.url} target="_blank" rel="noopener noreferrer"
+                                        className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full border hover:opacity-80"
+                                        style={{color:COLORS[coverageModal], borderColor:COLORS[coverageModal]+'44', backgroundColor:COLORS[coverageModal]+'11'}}
+                                        onClick={e => e.stopPropagation()}>채널 →</a>
+                                    )}
+                                  </div>
+                                  {ch.latestTitle && <p className="text-gray-400 text-xs truncate mb-1">최근: {ch.latestTitle}</p>}
+                                  <div className="flex gap-3 text-xs text-gray-500">
+                                    <span>📺 {ch.count}회 방송</span>
+                                    {ch.viewers > 0 && <span>👁 {ch.viewers.toLocaleString()}명</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* 플랫폼 인플루언서 모달 */}
                 {platformModal && (() => {
