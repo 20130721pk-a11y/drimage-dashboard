@@ -192,27 +192,28 @@ export default function Home() {
     return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= df && dateVal <= dt
   }), [news, category, segment, search, sourceType, selectedKeyword, df, dt])
 
-  const filteredStreams = streams.filter(s => {
+  const filteredStreams = useMemo(() => streams.filter(s => {
     const matchCat = streamCategory === '전체' || s.category === streamCategory
     const matchPlatform = streamPlatform === '전체' || s.platform === streamPlatform
     const matchSearch = s.title?.toLowerCase().includes(streamSearch.toLowerCase()) || s.channel_name?.toLowerCase().includes(streamSearch.toLowerCase())
     const matchType = streamType === '전체' || (streamType === '생방송' && s.is_live) || (streamType === 'VOD' && !s.is_live)
     const matchSeg = !streamSegment || s.tags?.includes(streamSegment) || s.title?.includes(streamSegment)
+    const matchStreamKw = !selectedStreamKeyword || s.tags?.includes(selectedStreamKeyword) || s.title?.includes(selectedStreamKeyword)
     const dateVal = s.started_at || ''
-    // 라이브 방송은 날짜 필터 무시하고 항상 표시
     const matchDate = s.is_live || (dateVal >= df && dateVal <= dt)
-    return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate
-  })
+    return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate && matchStreamKw
+  }), [streams, streamCategory, streamPlatform, streamSearch, streamType, streamSegment, df, dt, selectedStreamKeyword])
 
   const currentKeywords = COMM_KEYWORDS[commKeyword] || []
   const keywordPosts = posts.filter(p => currentKeywords.some(kw => p.keyword === kw || p.title?.includes(kw)))
-  const filteredPosts = keywordPosts.filter(p => {
+  const filteredPosts = useMemo(() => keywordPosts.filter(p => {
     const matchSentiment = commSentiment === '전체' || p.sentiment === commSentiment
     const matchCommunity = commCommunity === '전체' || p.community === commCommunity
     const matchSearch = p.title?.toLowerCase().includes(commSearch.toLowerCase())
+    const matchCommKw = !selectedCommKeyword || p.title?.includes(selectedCommKeyword) || p.content?.includes(selectedCommKeyword)
     const dateVal = p.posted_at || p.collected_at || ''
-    return matchSentiment && matchCommunity && matchSearch && dateVal >= df && dateVal <= dt
-  })
+    return matchSentiment && matchCommunity && matchSearch && matchCommKw && dateVal >= df && dateVal <= dt
+  }), [keywordPosts, commSentiment, commCommunity, commSearch, df, dt, selectedCommKeyword])
 
   // 뉴스 통계 - 모두 filteredNews 기준으로 통일
   const yestFrom = yesterday + 'T00:00:00'
@@ -371,7 +372,7 @@ export default function Home() {
     live: streams.filter(s => s.platform === p && s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length,
     vod: streams.filter(s => s.platform === p && !s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length,
   }))
-  const liveCount = streams.filter(s => s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length
+  const liveCount = streams.filter(s => s.is_live).length
   const streamCatCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat && (s.started_at||'') >= df && (s.started_at||'') <= dt).length }))
 
   // 커뮤니티 통계
@@ -393,7 +394,7 @@ export default function Home() {
   })
 
   // 방송 키워드 빈도
-  const streamKeywordFreq = (() => {
+  const streamKeywordFreq = useMemo(() => {
     const freq: Record<string, number> = {}
     filteredStreams.forEach(s => {
       (s.tags || []).forEach(tag => {
@@ -407,7 +408,7 @@ export default function Home() {
       })
     })
     return Object.entries(freq).map(([name, count]) => ({ name, count, cat: '방송' })).sort((a,b)=>b.count-a.count).slice(0,20)
-  })()
+  }, [filteredStreams])
 
   // 방송 횟수 TOP 5
   const commKeywordFreq = useMemo(() => {
