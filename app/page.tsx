@@ -304,11 +304,11 @@ export default function Home() {
 
   // 요일별 발행 패턴
   const dayNames = ['일','월','화','수','목','금','토']
-  const weekdayData = dayNames.map((day, i) => ({
+  const weekdayData = filteredNews.map ? DAY_NAMES.map((day, i) => ({
     day,
-    자사: news.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='자사' }).length,
-    경쟁사: news.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='경쟁사' }).length,
-    업계: news.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='업계' }).length,
+    자사: filteredNews.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='자사' }).length,
+    경쟁사: filteredNews.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='경쟁사' }).length,
+    업계: filteredNews.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='업계' }).length,
   }))
 
   // 급상승 키워드 (어제 대비 오늘 증가량)
@@ -629,7 +629,7 @@ export default function Home() {
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">📅 요일별 발행 패턴</p>
                       <div className="flex items-center gap-3">
-                        <p className="text-xs text-gray-600">전체 누적</p>
+                        <p className="text-xs text-gray-600">{periodLabel} 기준</p>
                         <span className="text-xs text-indigo-400 font-medium">
                           최다: {weekdayData.reduce((a,b)=>(a.자사+a.경쟁사+a.업계)>(b.자사+b.경쟁사+b.업계)?a:b).day}요일
                         </span>
