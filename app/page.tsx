@@ -1016,26 +1016,106 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* 카테고리별 라이브 vs VOD */}
+                  {/* ② 자사 게임 커버 채널 */}
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs text-gray-500 font-medium">📊 카테고리별 라이브 vs VOD</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">🎮 자사 게임 커버 채널</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
                     </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={['자사','경쟁사','업계'].map(cat=>({
-                        name: cat,
-                        라이브: filteredStreams.filter(s=>s.category===cat&&s.is_live).length,
-                        VOD: filteredStreams.filter(s=>s.category===cat&&!s.is_live).length,
-                      }))} onClick={(d:any)=>{if(d?.activeLabel)handleStreamClick(d.activeLabel)}}>
-                        <XAxis dataKey="name" tick={{fill:'#9ca3af',fontSize:11}} axisLine={false} tickLine={false}/>
-                        <YAxis hide/>
-                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
-                        <Bar dataKey="라이브" stackId="a" fill="#ef4444" radius={[0,0,0,0]}/>
-                        <Bar dataKey="VOD" stackId="a" fill="#6366f1" radius={[4,4,0,0]}/>
-                        <Legend wrapperStyle={{fontSize:'11px'}}/>
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {(() => {
+                      const myStreams = filteredStreams.filter(s => s.category === '자사')
+                      const channelMap: Record<string, {count:number, platform:string, viewers:number, latest:string}> = {}
+                      myStreams.forEach(s => {
+                        if (!s.channel_name) return
+                        if (!channelMap[s.channel_name]) channelMap[s.channel_name] = {count:0, platform:s.platform, viewers:0, latest:''}
+                        channelMap[s.channel_name].count++
+                        channelMap[s.channel_name].viewers += s.viewer_count || 0
+                        if (!channelMap[s.channel_name].latest || s.started_at > channelMap[s.channel_name].latest)
+                          channelMap[s.channel_name].latest = s.started_at || ''
+                      })
+                      const channels = Object.entries(channelMap).map(([name, v]) => ({name, ...v})).sort((a,b)=>b.count-a.count).slice(0,5)
+                      if (!channels.length) return <p className="text-xs text-gray-600 text-center py-8">데이터 없음</p>
+                      return (
+                        <div className="space-y-2.5">
+                          {channels.map((ch, i) => (
+                            <div key={ch.name} className="flex items-center gap-3">
+                              <span className={`text-xs font-bold w-4 text-center ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-xs font-medium truncate">{ch.name}</p>
+                                <p className="text-xs" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-indigo-400 font-medium">{ch.count}회</p>
+                                {ch.viewers > 0 && <p className="text-xs text-gray-500">👁 {ch.viewers.toLocaleString()}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })()}
+                  </div>
+
+                  {/* ③ 플랫폼별 인플루언서 현황 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">📡 플랫폼별 인플루언서 현황</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <div className="space-y-3">
+                      {['유튜브','치지직','SOOP'].map(platform => {
+                        const platStreams = filteredStreams.filter(s => s.platform === platform)
+                        const activeChannels = new Set(platStreams.map(s => s.channel_name).filter(Boolean)).size
+                        const prevChs = new Set(streams.filter(s => s.platform === platform && (s.started_at||'') < df).map(s => s.channel_name).filter(Boolean))
+                        const newChs = [...new Set(platStreams.map(s => s.channel_name).filter(Boolean))].filter(c => !prevChs.has(c)).length
+                        const topChannel = (() => {
+                          const freq: Record<string,number> = {}
+                          platStreams.forEach(s => { if(s.channel_name) freq[s.channel_name] = (freq[s.channel_name]||0)+1 })
+                          const top = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0]
+                          return top ? `${top[0]} (${top[1]}회)` : '-'
+                        })()
+                        return (
+                          <div key={platform} className="bg-gray-700/40 rounded-xl p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="w-4 h-4" dangerouslySetInnerHTML={{__html: PLATFORM_ICONS[platform]||''}}/>
+                              <span className="text-xs font-semibold" style={{color:PLATFORM_COLORS[platform]}}>{platform}</span>
+                              <span className="ml-auto text-xs text-white font-bold">{activeChannels}개 채널</span>
+                              {newChs > 0 && <span className="text-xs text-emerald-400">+{newChs} 신규</span>}
+                            </div>
+                            <p className="text-xs text-gray-400 truncate">TOP: {topChannel}</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* ④ 경쟁사 커버리지 비교 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">⚔️ 카테고리별 커버리지</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <div className="space-y-3">
+                      {['자사','경쟁사','업계'].map(cat => {
+                        const catStreams = filteredStreams.filter(s => s.category === cat)
+                        const channels = new Set(catStreams.map(s => s.channel_name).filter(Boolean)).size
+                        const totalViewers = catStreams.reduce((sum, s) => sum + (s.viewer_count||0), 0)
+                        const liveCount = catStreams.filter(s => s.is_live).length
+                        const total = filteredStreams.length || 1
+                        const pct = Math.round(catStreams.length / total * 100)
+                        return (
+                          <div key={cat}>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="font-medium" style={{color:COLORS[cat]}}>{cat}</span>
+                              <span className="text-gray-400">{catStreams.length}건 · {channels}채널 {liveCount > 0 && <span className="text-red-400">· 🔴{liveCount}</span>}</span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full mb-1">
+                              <div className="h-2 rounded-full transition-all" style={{width:`${pct}%`, backgroundColor:COLORS[cat]}}></div>
+                            </div>
+                            {totalViewers > 0 && <p className="text-xs text-gray-600">총 시청자 {totalViewers.toLocaleString()}명</p>}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
 
