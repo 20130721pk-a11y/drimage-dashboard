@@ -1020,37 +1020,102 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* ② 자사 게임 커버 채널 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700 cursor-pointer hover:border-indigo-500 transition-colors" onClick={() => setCoverChannelModal(true)}>
+                  {/* ⑤⑦ 키워드 트렌드 / 멀티 커버 채널 탭 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">🎮 자사 게임 커버 채널</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                      <div className="flex gap-1 bg-gray-700 p-0.5 rounded-lg">
+                        <button onClick={() => setStreamInfoTab('keywords')} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${streamInfoTab==='keywords'?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>📊 키워드 트렌드</button>
+                        <button onClick={() => setStreamInfoTab('multi')} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${streamInfoTab==='multi'?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>🔀 멀티 커버</button>
+                      </div>
+                      <p className="text-xs text-gray-600">{periodLabel}</p>
                     </div>
-                    {(() => {
-                      const myStreams = filteredStreams.filter(s => s.category === '자사')
-                      const channelMap: Record<string, {count:number, platform:string, viewers:number, latest:string}> = {}
-                      myStreams.forEach(s => {
-                        if (!s.channel_name) return
-                        if (!channelMap[s.channel_name]) channelMap[s.channel_name] = {count:0, platform:s.platform, viewers:0, latest:''}
-                        channelMap[s.channel_name].count++
-                        channelMap[s.channel_name].viewers += s.viewer_count || 0
-                        if (!channelMap[s.channel_name].latest || s.started_at > channelMap[s.channel_name].latest)
-                          channelMap[s.channel_name].latest = s.started_at || ''
-                      })
-                      const channels = Object.entries(channelMap).map(([name, v]) => ({name, ...v})).sort((a,b)=>b.count-a.count).slice(0,5)
-                      if (!channels.length) return <p className="text-xs text-gray-600 text-center py-8">데이터 없음</p>
+
+                    {streamInfoTab === 'keywords' && (() => {
+                      const stopwords = new Set(['라이브','방송','게임','중','하는','해요','합니다','영상','플레이','스트림','시작','진행','오늘','현재','같이','그리고','gg','vs','with','the','and','for'])
+                      const getTopKw = (cat: string) => {
+                        const freq: Record<string,number> = {}
+                        filteredStreams.filter(s=>s.category===cat).forEach(s=>{
+                          const words = (s.title||'').match(/[가-힣a-zA-Z]{2,}/g)||[]
+                          words.forEach(w=>{ if(!stopwords.has(w.toLowerCase())) freq[w]=(freq[w]||0)+1 })
+                        })
+                        return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5)
+                      }
+                      const myKw = getTopKw('자사')
+                      const compKw = getTopKw('경쟁사')
+                      const maxVal = Math.max(...myKw.map(k=>k[1]), ...compKw.map(k=>k[1]), 1)
                       return (
-                        <div className="space-y-2.5">
-                          {channels.map((ch, i) => (
-                            <div key={ch.name} className="flex items-center gap-3">
-                              <span className={`text-xs font-bold w-4 text-center ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-white text-xs font-medium truncate">{ch.name}</p>
-                                <p className="text-xs" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs font-semibold mb-2" style={{color:COLORS['자사']}}>자사 방송 키워드</p>
+                            {myKw.length === 0
+                              ? <p className="text-xs text-gray-600 py-4 text-center">데이터 없음</p>
+                              : myKw.map(([kw,cnt])=>(
+                              <div key={kw} className="mb-2">
+                                <div className="flex justify-between text-xs mb-0.5">
+                                  <span className="text-gray-300 truncate max-w-[80px]">{kw}</span>
+                                  <span className="text-gray-500">{cnt}</span>
+                                </div>
+                                <div className="h-1.5 bg-gray-700 rounded-full">
+                                  <div className="h-1.5 rounded-full" style={{width:`${cnt/maxVal*100}%`,backgroundColor:COLORS['자사']}}></div>
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-xs text-indigo-400 font-medium">{ch.count}회</p>
-                                {ch.viewers > 0 && <p className="text-xs text-gray-500">👁 {ch.viewers.toLocaleString()}</p>}
+                            ))}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold mb-2" style={{color:COLORS['경쟁사']}}>경쟁사 방송 키워드</p>
+                            {compKw.length === 0
+                              ? <p className="text-xs text-gray-600 py-4 text-center">데이터 없음</p>
+                              : compKw.map(([kw,cnt])=>(
+                              <div key={kw} className="mb-2">
+                                <div className="flex justify-between text-xs mb-0.5">
+                                  <span className="text-gray-300 truncate max-w-[80px]">{kw}</span>
+                                  <span className="text-gray-500">{cnt}</span>
+                                </div>
+                                <div className="h-1.5 bg-gray-700 rounded-full">
+                                  <div className="h-1.5 rounded-full" style={{width:`${cnt/maxVal*100}%`,backgroundColor:COLORS['경쟁사']}}></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {streamInfoTab === 'multi' && (() => {
+                      const myChannels = new Set(filteredStreams.filter(s=>s.category==='자사').map(s=>s.channel_name).filter(Boolean))
+                      const compChannels = new Set(filteredStreams.filter(s=>s.category==='경쟁사').map(s=>s.channel_name).filter(Boolean))
+                      const multiChannels = [...myChannels].filter(c=>compChannels.has(c)).map(name=>{
+                        const chStreams = filteredStreams.filter(s=>s.channel_name===name)
+                        const cats = [...new Set(chStreams.map(s=>s.category))]
+                        const platform = chStreams[0]?.platform||''
+                        const url = chStreams.find(s=>s.url)?.url||''
+                        const games = [...new Set(chStreams.flatMap(s=>s.tags||[]))].slice(0,3)
+                        return {name, cats, platform, url, games, count:chStreams.length}
+                      }).sort((a,b)=>b.count-a.count)
+                      if (!multiChannels.length) return (
+                        <div className="flex flex-col items-center justify-center py-6 gap-2">
+                          <p className="text-2xl">🔀</p>
+                          <p className="text-xs text-gray-500 text-center">자사 + 경쟁사 게임을<br/>동시에 방송한 채널 없음</p>
+                        </div>
+                      )
+                      return (
+                        <div className="space-y-2">
+                          {multiChannels.slice(0,5).map((ch,i)=>(
+                            <div key={ch.name} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-700/40 transition-colors">
+                              <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <p className="text-white text-xs font-medium truncate">{ch.name}</p>
+                                  <span className="text-xs flex-shrink-0" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</span>
+                                </div>
+                                <div className="flex gap-1 flex-wrap">
+                                  {ch.cats.map(cat=><span key={cat} className="text-xs px-1.5 py-0.5 rounded-full" style={{backgroundColor:COLORS[cat]+'22',color:COLORS[cat]}}>{cat}</span>)}
+                                  {ch.games.map(g=><span key={g} className="text-xs px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-400">{g}</span>)}
+                                </div>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="text-xs text-gray-400">{ch.count}회</p>
+                                {ch.url && <a href={ch.url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-400 hover:opacity-80" onClick={e=>e.stopPropagation()}>→</a>}
                               </div>
                             </div>
                           ))}
