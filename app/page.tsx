@@ -344,7 +344,19 @@ export default function Home() {
   }))
 
   // 하이라이트 - filteredNews 기준
-  const highlightNews = [...filteredNews].sort((a,b) => { const score = (n: any) => (n.category==='자사'?100:n.category==='경쟁사'?50:10)+(n.tags?.length||0)*2; return score(b)-score(a) })[0]
+  const highlightNews = (() => {
+    if (!filteredNews.length) return null
+    const freqMap: Record<string, number> = {}
+    keywordFreq.forEach((k: any) => { freqMap[k.name] = k.count })
+    return [...filteredNews].sort((a, b) => {
+      const score = (n: any) => {
+        const catScore = n.category === '자사' ? 200 : n.category === '경쟁사' ? 100 : 0
+        const freqScore = (n.tags || []).reduce((sum: number, tag: string) => sum + (freqMap[tag] || 0), 0)
+        return catScore + freqScore
+      }
+      return score(b) - score(a)
+    })[0]
+  })()
   const topKeywords = keywordFreq.slice(0, 6)
   
   // 기간 레이블
