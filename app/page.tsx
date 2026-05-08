@@ -123,6 +123,7 @@ export default function Home() {
   const [selectedStreamKeyword, setSelectedStreamKeyword] = useState<string>('')
   const [platformModal, setPlatformModal] = useState<string | null>(null)
   const [coverChannelModal, setCoverChannelModal] = useState<boolean>(false)
+  const [streamInfoTab, setStreamInfoTab] = useState<'keywords'|'multi'>('keywords')
   const [coverageModal, setCoverageModal] = useState<string | null>(null)
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
