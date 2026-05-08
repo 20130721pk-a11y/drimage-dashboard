@@ -219,8 +219,8 @@ export default function Home() {
     const matchSearch = s.title?.toLowerCase().includes(streamSearch.toLowerCase()) || s.channel_name?.toLowerCase().includes(streamSearch.toLowerCase())
     const matchType = streamType === '전체' || (streamType === '생방송' && s.is_live) || (streamType === 'VOD' && !s.is_live)
     const segAliases = SEGMENT_ALIASES[streamSegment] || [streamSegment]
-    const matchSeg = !streamSegment || segAliases.some(alias =>
-      s.tags?.some(t => t.toLowerCase().includes(alias.toLowerCase())) ||
+    const matchSeg = !streamSegment || segAliases.some((alias: string) =>
+      (s.tags as string[] || []).some((t: string) => t.toLowerCase().includes(alias.toLowerCase())) ||
       (s.title||'').toLowerCase().includes(alias.toLowerCase())
     )
     const matchStreamKw = !selectedStreamKeyword || s.tags?.includes(selectedStreamKeyword) || s.title?.includes(selectedStreamKeyword)
@@ -1050,8 +1050,8 @@ export default function Home() {
                       const getTopKw = (cat: string) => {
                         const freq: Record<string,number> = {}
                         filteredStreams.filter(s=>s.category===cat).forEach(s=>{
-                          const words = (s.title||'').match(/[가-힣a-zA-Z]{2,}/g)||[]
-                          words.forEach(w=>{ if(!stopwords.has(w.toLowerCase())) freq[w]=(freq[w]||0)+1 })
+                          const words: string[] = (s.title||'').match(/[가-힣a-zA-Z]{2,}/g)||[]
+                          words.forEach((w: string)=>{ if(!stopwords.has(w.toLowerCase())) freq[w]=(freq[w]||0)+1 })
                         })
                         return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5)
                       }
