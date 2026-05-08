@@ -15,6 +15,17 @@ const COLORS: Record<string, string> = {
   '모바일게임': '#059669', '콘솔게임': '#10b981', '스팀': '#34d399', '신작': '#6ee7b7', '서비스종료': '#a7f3d0', 'PC게임': '#34d399', '사전예약': '#6ee7b7', '런칭': '#a7f3d0',
 }
 const SENTIMENT_COLORS: Record<string, string> = { '긍정': '#10b981', '부정': '#ef4444', '중립': '#6b7280' }
+const SEGMENT_ALIASES: Record<string, string[]> = {
+  '드림에이지':    ['드림에이지','drimage','dream age'],
+  '알케론':        ['알케론','arkheron'],
+  '아키텍트':      ['아키텍트','드림에이지 아키텍트'],
+  '포트나이트':    ['포트나이트','fortnite'],
+  '리그오브레전드':['리그오브레전드','리그 오브 레전드','league of legends','lol','롤'],
+  '이터널리턴':    ['이터널리턴','이터널 리턴','eternal return','eternalreturn','블랙서바이벌'],
+  '배틀그라운드':  ['배틀그라운드','pubg','battlegrounds','배그'],
+  '발로란트':      ['발로란트','valorant'],
+}
+
 const PLATFORM_COLORS: Record<string, string> = { '유튜브': '#ef4444', '치지직': '#02C75A', 'SOOP': '#006EFF' }
 const PLATFORM_ICONS: Record<string, string> = {
   '유튜브': '<svg viewBox="0 0 24 24" fill="#ef4444"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>',
@@ -207,7 +218,11 @@ export default function Home() {
     const matchPlatform = streamPlatform === '전체' || s.platform === streamPlatform
     const matchSearch = s.title?.toLowerCase().includes(streamSearch.toLowerCase()) || s.channel_name?.toLowerCase().includes(streamSearch.toLowerCase())
     const matchType = streamType === '전체' || (streamType === '생방송' && s.is_live) || (streamType === 'VOD' && !s.is_live)
-    const matchSeg = !streamSegment || s.tags?.includes(streamSegment) || s.title?.includes(streamSegment)
+    const segAliases = SEGMENT_ALIASES[streamSegment] || [streamSegment]
+    const matchSeg = !streamSegment || segAliases.some(alias =>
+      s.tags?.some(t => t.toLowerCase().includes(alias.toLowerCase())) ||
+      (s.title||'').toLowerCase().includes(alias.toLowerCase())
+    )
     const matchStreamKw = !selectedStreamKeyword || s.tags?.includes(selectedStreamKeyword) || s.title?.includes(selectedStreamKeyword)
     const dateVal = s.started_at || ''
     const matchDate = s.is_live || (dateVal >= df && dateVal <= dt)
