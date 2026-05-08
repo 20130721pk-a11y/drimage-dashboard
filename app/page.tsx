@@ -348,7 +348,9 @@ export default function Home() {
     if (!filteredNews.length) return null
     const freqMap: Record<string, number> = {}
     keywordFreq.forEach((k: any) => { freqMap[k.name] = k.count })
-    return [...filteredNews].sort((a, b) => {
+    const newsOnly = filteredNews.filter((n: any) => !n.source?.includes('블로그'))
+    const pool = newsOnly.length > 0 ? newsOnly : filteredNews
+    return [...pool].sort((a, b) => {
       const score = (n: any) => {
         const catScore = n.category === '자사' ? 200 : n.category === '경쟁사' ? 100 : 0
         const freqScore = (n.tags || []).reduce((sum: number, tag: string) => sum + (freqMap[tag] || 0), 0)
