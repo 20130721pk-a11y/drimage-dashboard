@@ -16,6 +16,12 @@ const COLORS: Record<string, string> = {
 }
 const SENTIMENT_COLORS: Record<string, string> = { '긍정': '#10b981', '부정': '#ef4444', '중립': '#6b7280' }
 const PLATFORM_COLORS: Record<string, string> = { '유튜브': '#ef4444', '치지직': '#6366f1', 'SOOP': '#f59e0b' }
+const PLATFORM_ICONS: Record<string, string> = {
+  '유튜브': '<svg viewBox="0 0 24 24" fill="#ef4444"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>',
+  '치지직': '<svg viewBox="0 0 24 24" fill="#6366f1"><path d="M4 3h16v13l-8 5-8-5V3zm4 4v5l4 2.5L16 12V7H8z"/></svg>',
+  'SOOP': '<svg viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>',
+}
+
 const COMMUNITY_COLORS: Record<string, string> = { '인벤': '#f59e0b', '루리웹': '#6366f1', '디시인사이드': '#ef4444', '네이버카페': '#10b981', '아카라이브': '#8b5cf6', '디스이즈게임': '#ec4899' }
 const SEGMENTS: Record<string, string[]> = {
   '자사': ['드림에이지', '아키텍트', '알케론'],
@@ -392,6 +398,17 @@ export default function Home() {
     const dp = keywordPosts.filter(p => (p.collected_at||'').startsWith(ds))
     return { date: `${d.getMonth()+1}/${d.getDate()}`, 긍정: dp.filter(p => p.sentiment==='긍정').length, 부정: dp.filter(p => p.sentiment==='부정').length, 중립: dp.filter(p => p.sentiment==='중립').length }
   })
+
+  // 방송 요일별 패턴
+  const streamWeekdayData = useMemo(() => {
+    const dayNames = ['일','월','화','수','목','금','토']
+    return dayNames.map((day, i) => ({
+      day,
+      유튜브: filteredStreams.filter(s => { const d = s.started_at; return d && new Date(d).getDay()===i && s.platform==='유튜브' }).length,
+      치지직: filteredStreams.filter(s => { const d = s.started_at; return d && new Date(d).getDay()===i && s.platform==='치지직' }).length,
+      SOOP: filteredStreams.filter(s => { const d = s.started_at; return d && new Date(d).getDay()===i && s.platform==='SOOP' }).length,
+    }))
+  }, [filteredStreams])
 
   // 방송 키워드 빈도
   const streamKeywordFreq = useMemo(() => {
@@ -841,10 +858,13 @@ export default function Home() {
                   {/* 플랫폼 카드 */}
                   {streamPlatCount.map(p => (
                     <button key={p.name} onClick={() => handleStreamClick(undefined, p.name)} className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700 hover:border-gray-500 transition-all text-left group">
-                      <p className="text-xs text-gray-500 mb-3">{p.name}</p>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-5 h-5 flex-shrink-0" dangerouslySetInnerHTML={{__html: PLATFORM_ICONS[p.name] || ''}} />
+                        <span className="text-xs font-semibold" style={{color: PLATFORM_COLORS[p.name]}}>{p.name}</span>
+                      </div>
                       <p className="text-4xl font-bold group-hover:opacity-80" style={{ color: PLATFORM_COLORS[p.name] }}>{p.value}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
                       <div className="mt-3 flex gap-3 text-xs">
-                        <span className="text-red-400">🔴 {p.live}</span>
+                        <span style={{color: PLATFORM_COLORS[p.name]}}>🔴 {p.live}</span>
                         <span className="text-gray-500">📹 {p.vod}</span>
                       </div>
                     </button>
