@@ -15,11 +15,11 @@ const COLORS: Record<string, string> = {
   '모바일게임': '#059669', '콘솔게임': '#10b981', '스팀': '#34d399', '신작': '#6ee7b7', '서비스종료': '#a7f3d0', 'PC게임': '#34d399', '사전예약': '#6ee7b7', '런칭': '#a7f3d0',
 }
 const SENTIMENT_COLORS: Record<string, string> = { '긍정': '#10b981', '부정': '#ef4444', '중립': '#6b7280' }
-const PLATFORM_COLORS: Record<string, string> = { '유튜브': '#ef4444', '치지직': '#6366f1', 'SOOP': '#f59e0b' }
+const PLATFORM_COLORS: Record<string, string> = { '유튜브': '#ef4444', '치지직': '#02C75A', 'SOOP': '#006EFF' }
 const PLATFORM_ICONS: Record<string, string> = {
   '유튜브': '<svg viewBox="0 0 24 24" fill="#ef4444"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>',
-  '치지직': '<svg viewBox="0 0 24 24" fill="#6366f1"><path d="M4 3h16v13l-8 5-8-5V3zm4 4v5l4 2.5L16 12V7H8z"/></svg>',
-  'SOOP': '<svg viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>',
+  '치지직': '<svg viewBox="0 0 24 24" fill="#02C75A"><path d="M7 2l2 5h3l-5 8 1-5H5L7 2zm4 13l2 5h3l-5-5zm5-8l2 3-2 3h3l2-3-2-3h-3z"/></svg>',
+  'SOOP': '<svg viewBox="0 0 24 24" fill="#006EFF"><path d="M12 2C8 2 5 4.5 5 8c0 2 1 3.5 2.5 4.5C5.5 13.5 4 15.5 4 18h2c0-2.5 2-4 4-4h.5C8.5 13 7 11.5 7 8c0-2.8 2.2-4 5-4s5 1.2 5 4c0 3.5-1.5 5-3.5 6h.5c2 0 4 1.5 4 4h2c0-2.5-1.5-4.5-3.5-5.5C18 11.5 19 10 19 8c0-3.5-3-6-7-6z"/></svg>',
 }
 
 const COMMUNITY_COLORS: Record<string, string> = { '인벤': '#f59e0b', '루리웹': '#6366f1', '디시인사이드': '#ef4444', '네이버카페': '#10b981', '아카라이브': '#8b5cf6', '디스이즈게임': '#ec4899' }
@@ -398,6 +398,17 @@ export default function Home() {
     const dp = keywordPosts.filter(p => (p.collected_at||'').startsWith(ds))
     return { date: `${d.getMonth()+1}/${d.getDate()}`, 긍정: dp.filter(p => p.sentiment==='긍정').length, 부정: dp.filter(p => p.sentiment==='부정').length, 중립: dp.filter(p => p.sentiment==='중립').length }
   })
+
+  // 방송 시간대별 데이터 (KST 기준)
+  const streamHourlyData = useMemo(() => Array.from({length: 24}, (_, h) => ({
+    hour: `${h}시`, h,
+    count: filteredStreams.filter(s => {
+      const d = s.started_at
+      if (!d) return false
+      const kstHour = (new Date(d).getUTCHours() + 9) % 24
+      return kstHour === h
+    }).length
+  })), [filteredStreams])
 
   // 방송 요일별 패턴
   const streamWeekdayData = useMemo(() => {
@@ -894,7 +905,7 @@ export default function Home() {
                 {/* 방송 시각화 섹션 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
                   {/* 키워드 워드클라우드 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">☁️ 방송 키워드</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
@@ -902,34 +913,10 @@ export default function Home() {
                     <WordCloud words={streamKeywordFreq} onWordClick={(word: string) => { setSelectedStreamKeyword(selectedStreamKeyword === word ? '' : word); scrollToList() }} selectedWord={selectedStreamKeyword} />
                   </div>
 
-                  {/* 요일별 방송 패턴 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">📅 요일별 방송 패턴</p>
-                      <span className="text-xs text-indigo-400 font-medium">
-                        최다: {streamWeekdayData.reduce((a,b)=>(a.유튜브+a.치지직+a.SOOP)>(b.유튜브+b.치지직+b.SOOP)?a:b).day}요일
-                      </span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={180}>
-                      <BarChart data={streamWeekdayData} barCategoryGap="20%">
-                        <XAxis dataKey="day" tick={{fill:'#9ca3af',fontSize:12}} axisLine={false} tickLine={false}/>
-                        <YAxis tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false} width={25}/>
-                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`${v}건`,n]}/>
-                        <Bar dataKey="유튜브" stackId="a" fill="#ef4444"/>
-                        <Bar dataKey="치지직" stackId="a" fill="#6366f1"/>
-                        <Bar dataKey="SOOP" stackId="a" fill="#f59e0b" radius={[4,4,0,0]}/>
-                      </BarChart>
-                    </ResponsiveContainer>
-                    <div className="flex gap-4 mt-2">
-                      {['유튜브','치지직','SOOP'].map(p=><div key={p} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:PLATFORM_COLORS[p]}}></div><span className="text-xs text-gray-500">{p}</span></div>)}
-                    </div>
-                  </div>
-
-                  {/* 7일간 플랫폼별 추이 */}
+                  {/* 7일간 플랫폼별 추이 (SOOP 추가) */}
                   <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">📈 7일간 플랫폼별 추이</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
                     </div>
                     <ResponsiveContainer width="100%" height={160}>
                       <AreaChart data={Array.from({length:7},(_,i)=>{
@@ -939,20 +926,93 @@ export default function Home() {
                           date:`${d.getMonth()+1}/${d.getDate()}`,
                           유튜브: streams.filter(s=>s.platform==='유튜브'&&(s.started_at||'').startsWith(ds)).length,
                           치지직: streams.filter(s=>s.platform==='치지직'&&(s.started_at||'').startsWith(ds)).length,
+                          SOOP: streams.filter(s=>s.platform==='SOOP'&&(s.started_at||'').startsWith(ds)).length,
                         }
                       })}>
                         <defs>
                           <linearGradient id="gradYT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
-                          <linearGradient id="gradCZ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradCZ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#02C75A" stopOpacity={0.3}/><stop offset="95%" stopColor="#02C75A" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradSP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#006EFF" stopOpacity={0.3}/><stop offset="95%" stopColor="#006EFF" stopOpacity={0}/></linearGradient>
                         </defs>
                         <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
                         <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
                         <Area type="monotone" dataKey="유튜브" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradYT)"/>
-                        <Area type="monotone" dataKey="치지직" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradCZ)"/>
+                        <Area type="monotone" dataKey="치지직" stroke="#02C75A" strokeWidth={1.5} fill="url(#gradCZ)"/>
+                        <Area type="monotone" dataKey="SOOP" stroke="#006EFF" strokeWidth={1.5} fill="url(#gradSP)"/>
                       </AreaChart>
                     </ResponsiveContainer>
                     <div className="flex gap-4 mt-2">
-                      {['유튜브','치지직'].map(p=><div key={p} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:PLATFORM_COLORS[p]}}></div><span className="text-xs text-gray-500">{p}</span></div>)}
+                      {['유튜브','치지직','SOOP'].map(p=><div key={p} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:PLATFORM_COLORS[p]}}></div><span className="text-xs text-gray-500">{p}</span></div>)}
+                    </div>
+                  </div>
+
+                  {/* 요일별 방송 패턴 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">📅 요일별 방송 패턴</p>
+                      <span className="text-xs font-medium" style={{color:PLATFORM_COLORS['유튜브']}}>
+                        최다: {streamWeekdayData.reduce((a,b)=>(a.유튜브+a.치지직+a.SOOP)>(b.유튜브+b.치지직+b.SOOP)?a:b).day}요일
+                      </span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={streamWeekdayData} barCategoryGap="20%">
+                        <XAxis dataKey="day" tick={{fill:'#9ca3af',fontSize:12}} axisLine={false} tickLine={false}/>
+                        <YAxis tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false} width={25}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`${v}건`,n]}/>
+                        <Bar dataKey="유튜브" stackId="a" fill="#ef4444"/>
+                        <Bar dataKey="치지직" stackId="a" fill="#02C75A"/>
+                        <Bar dataKey="SOOP" stackId="a" fill="#006EFF" radius={[4,4,0,0]}/>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      {['유튜브','치지직','SOOP'].map(p=><div key={p} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:PLATFORM_COLORS[p]}}></div><span className="text-xs text-gray-500">{p}</span></div>)}
+                    </div>
+                  </div>
+
+                  {/* 시간대별 방송량 (뉴스탭 스타일) */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 방송량</p>
+                      <p className="text-xs font-medium" style={{color:PLATFORM_COLORS['유튜브']}}>피크 {streamHourlyData.reduce((a,b)=>a.count>b.count?a:b).hour}</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <BarChart data={streamHourlyData} barCategoryGap="5%">
+                        <XAxis dataKey="hour" tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} interval={3}/>
+                        <YAxis tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} width={20}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any)=>[`${v}건`,'방송량']}/>
+                        <Bar dataKey="count" radius={[3,3,0,0]}>
+                          {streamHourlyData.map(h=>{
+                            const max=Math.max(...streamHourlyData.map(x=>x.count),1)
+                            return <Cell key={h.h} fill={h.count>0?`rgba(239,68,68,${0.3+(h.count/max)*0.7})`:'#1f2937'}/>
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="grid grid-cols-4 gap-2 mt-3">
+                      {[['새벽','0-6시',0,6],['오전','6-12시',6,12],['오후','12-18시',12,18],['저녁','18-24시',18,24]].map(([label,time,from,to]:any)=>(
+                        <div key={label} className="bg-gray-700/50 rounded-lg p-2 text-center">
+                          <p className="text-gray-500 text-xs">{label}</p>
+                          <p className="text-xs text-gray-600">{time}</p>
+                          <p className="font-bold mt-1 text-red-400" style={{fontSize:'14px'}}>{streamHourlyData.filter(h=>h.h>=from&&h.h<to).reduce((a,b)=>a+b.count,0)}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-gray-700">
+                      <p className="text-xs text-gray-600 mb-1.5">플랫폼별 비중</p>
+                      <div className="space-y-1">
+                        {streamPlatCount.map((p,i)=>{
+                          const total = streamPlatCount.reduce((s,x)=>s+x.value,0)||1
+                          return (
+                            <div key={p.name} className="flex items-center gap-2">
+                              <span className="text-xs w-12 truncate" style={{color:PLATFORM_COLORS[p.name]}}>{p.name}</span>
+                              <div className="flex-1 h-1.5 bg-gray-700 rounded-full">
+                                <div className="h-1.5 rounded-full" style={{width:`${p.value/total*100}%`,backgroundColor:PLATFORM_COLORS[p.name]}}></div>
+                              </div>
+                              <span className="text-xs text-gray-400 w-8 text-right">{p.value}건</span>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -976,41 +1036,6 @@ export default function Home() {
                         <Legend wrapperStyle={{fontSize:'11px'}}/>
                       </BarChart>
                     </ResponsiveContainer>
-                  </div>
-
-                  {/* 시간대별 방송량 히트맵 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 방송량</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
-                    </div>
-                    {(() => {
-                      const hourly = Array.from({length:24},(_,h)=>({
-                        h, count: filteredStreams.filter(s=>{
-                          const d=s.started_at; return d&&new Date(d).getHours()===h
-                        }).length
-                      }))
-                      const max = Math.max(...hourly.map(x=>x.count),1)
-                      const peak = hourly.reduce((a,b)=>a.count>b.count?a:b)
-                      return (
-                        <>
-                          <div className="grid grid-cols-6 gap-1 mb-2">
-                            {hourly.map(h=>{
-                              const intensity=h.count/max
-                              return (
-                                <div key={h.h} className="flex flex-col items-center gap-1">
-                                  <div className="w-full h-8 rounded" style={{backgroundColor:intensity>0?`rgba(239,68,68,${0.15+intensity*0.85})`:'#1f2937'}} title={`${h.h}시 ${h.count}건`}></div>
-                                  {h.h%4===0&&<span className="text-xs text-gray-600">{h.h}</span>}
-                                </div>
-                              )
-                            })}
-                          </div>
-                          <div className="mt-2 text-center">
-                            <span className="text-xs text-gray-500">피크: {peak.h}시 ({peak.count}건)</span>
-                          </div>
-                        </>
-                      )
-                    })()}
                   </div>
                 </div>
 
