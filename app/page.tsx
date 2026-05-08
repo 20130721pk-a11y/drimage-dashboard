@@ -121,6 +121,7 @@ export default function Home() {
   const [postLimit, setPostLimit] = useState(24)
   const [selectedKeyword, setSelectedKeyword] = useState<string>('')
   const [selectedStreamKeyword, setSelectedStreamKeyword] = useState<string>('')
+  const [platformModal, setPlatformModal] = useState<string | null>(null)
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
   const listRef = useRef<HTMLDivElement>(null)
@@ -1074,7 +1075,7 @@ export default function Home() {
                           return top ? `${top[0]} (${top[1]}회)` : '-'
                         })()
                         return (
-                          <div key={platform} className="bg-gray-700/40 rounded-xl p-3">
+                          <div key={platform} className="bg-gray-700/40 rounded-xl p-3 cursor-pointer hover:bg-gray-700/70 transition-colors" onClick={() => setPlatformModal(platform)}>
                             <div className="flex items-center gap-2 mb-2">
                               <span className="w-4 h-4" dangerouslySetInnerHTML={{__html: PLATFORM_ICONS[platform]||''}}/>
                               <span className="text-xs font-semibold" style={{color:PLATFORM_COLORS[platform]}}>{platform}</span>
@@ -1118,6 +1119,66 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {/* 플랫폼 인플루언서 모달 */}
+                {platformModal && (() => {
+                  const platStreams = filteredStreams.filter(s => s.platform === platformModal)
+                  const channelMap: Record<string, {count:number, viewers:number, latest:string, latestTitle:string, url:string}> = {}
+                  platStreams.forEach(s => {
+                    if (!s.channel_name) return
+                    if (!channelMap[s.channel_name]) channelMap[s.channel_name] = {count:0, viewers:0, latest:'', latestTitle:'', url:s.url||''}
+                    channelMap[s.channel_name].count++
+                    channelMap[s.channel_name].viewers += s.viewer_count || 0
+                    if (!channelMap[s.channel_name].latest || (s.started_at||'') > channelMap[s.channel_name].latest) {
+                      channelMap[s.channel_name].latest = s.started_at || ''
+                      channelMap[s.channel_name].latestTitle = s.title || ''
+                      channelMap[s.channel_name].url = s.url || ''
+                    }
+                  })
+                  const channels = Object.entries(channelMap).map(([name, v]) => ({name, ...v})).sort((a,b)=>b.count-a.count)
+                  return (
+                    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setPlatformModal(null)}>
+                      <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5" dangerouslySetInnerHTML={{__html: PLATFORM_ICONS[platformModal]||''}}/>
+                            <h3 className="text-white font-semibold" style={{color:PLATFORM_COLORS[platformModal]}}>{platformModal} 인플루언서</h3>
+                            <span className="text-xs text-gray-500 ml-1">{channels.length}개 채널</span>
+                          </div>
+                          <button onClick={() => setPlatformModal(null)} className="text-gray-500 hover:text-white text-lg">✕</button>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-3">
+                          {channels.length === 0
+                            ? <p className="text-gray-500 text-sm text-center py-8">데이터 없음</p>
+                            : channels.map((ch, i) => (
+                              <div key={ch.name} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-800 transition-colors">
+                                <span className={`text-xs font-bold w-5 text-center mt-1 flex-shrink-0 ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-white text-sm font-medium truncate">{ch.name}</p>
+                                    {ch.url && (
+                                      <a href={ch.url} target="_blank" rel="noopener noreferrer"
+                                        className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full border transition-colors hover:opacity-80"
+                                        style={{color:PLATFORM_COLORS[platformModal], borderColor:PLATFORM_COLORS[platformModal]+'44', backgroundColor:PLATFORM_COLORS[platformModal]+'11'}}
+                                        onClick={e => e.stopPropagation()}>
+                                        채널 →
+                                      </a>
+                                    )}
+                                  </div>
+                                  {ch.latestTitle && <p className="text-gray-400 text-xs truncate mb-1">최근: {ch.latestTitle}</p>}
+                                  <div className="flex gap-3 text-xs text-gray-500">
+                                    <span>📺 {ch.count}회 방송</span>
+                                    {ch.viewers > 0 && <span>👁 {ch.viewers.toLocaleString()}명</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4" ref={listRef}>
                   <div className="flex flex-wrap gap-2 items-center">
