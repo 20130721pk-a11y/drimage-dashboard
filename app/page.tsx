@@ -304,7 +304,7 @@ export default function Home() {
 
   // 요일별 발행 패턴
   const dayNames = ['일','월','화','수','목','금','토']
-  const weekdayData = filteredNews.map ? DAY_NAMES.map((day, i) => ({
+  const weekdayData = dayNames.map((day, i) => ({
     day,
     자사: filteredNews.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='자사' }).length,
     경쟁사: filteredNews.filter(n => { const d = n.published_at||n.collected_at; return d && new Date(d).getDay()===i && n.category==='경쟁사' }).length,
