@@ -902,51 +902,26 @@ export default function Home() {
                     <WordCloud words={streamKeywordFreq} onWordClick={(word: string) => { setSelectedStreamKeyword(selectedStreamKeyword === word ? '' : word); scrollToList() }} selectedWord={selectedStreamKeyword} />
                   </div>
 
-                  {/* 인기 채널 TOP 5 - 탭 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  {/* 요일별 방송 패턴 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">🏆 인기 채널 TOP 5</p>
-                      <div className="flex gap-1 bg-gray-700 p-0.5 rounded-lg">
-                        <button onClick={() => setChannelSort('count')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${channelSort==='count'?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>방송 횟수</button>
-                        <button onClick={() => setChannelSort('viewers')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${channelSort==='viewers'?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>시청자 수</button>
-                      </div>
+                      <p className="text-xs text-gray-500 font-medium">📅 요일별 방송 패턴</p>
+                      <span className="text-xs text-indigo-400 font-medium">
+                        최다: {streamWeekdayData.reduce((a,b)=>(a.유튜브+a.치지직+a.SOOP)>(b.유튜브+b.치지직+b.SOOP)?a:b).day}요일
+                      </span>
                     </div>
-                    <div className="space-y-2.5">
-                      {(channelSort==='count' ? topChannelsByCount : topChannelsByViewers).map((ch, i) => (
-                        <div key={ch.name} className="flex items-center gap-3">
-                          <span className={`text-xs font-bold w-5 text-center ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white text-xs font-medium truncate">{ch.name}</p>
-                            <p className="text-xs" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</p>
-                          </div>
-                          <div className="text-right">
-                            {channelSort==='count'
-                              ? <p className="text-xs text-gray-300 font-medium">{ch.count}건</p>
-                              : <p className="text-xs text-blue-400 font-medium">{ch.viewers.toLocaleString()}명</p>
-                            }
-                            {ch.live > 0 && <p className="text-xs text-red-400">🔴 LIVE</p>}
-                          </div>
-                        </div>
-                      ))}
-                      {(channelSort==='viewers' && topChannelsByViewers.length === 0) && (
-                        <p className="text-xs text-gray-600 text-center py-4">시청자 수 데이터 수집 중...</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 신규 채널 */}
-                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-3">✨ 신규 채널</p>
-                    <p className="text-4xl font-bold text-emerald-400 mb-1">{newChannels.length}<span className="text-lg text-gray-500 font-normal ml-1">개</span></p>
-                    <p className="text-xs text-gray-600 mb-4">{periodLabel} 기간 첫 등장</p>
-                    <div className="space-y-1.5">
-                      {newChannels.slice(0,4).map(ch => (
-                        <div key={ch} className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                          <span className="text-xs text-gray-400 truncate">{ch}</span>
-                        </div>
-                      ))}
-                      {newChannels.length > 4 && <p className="text-xs text-gray-600">+{newChannels.length-4}개 더</p>}
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={streamWeekdayData} barCategoryGap="20%">
+                        <XAxis dataKey="day" tick={{fill:'#9ca3af',fontSize:12}} axisLine={false} tickLine={false}/>
+                        <YAxis tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false} width={25}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`${v}건`,n]}/>
+                        <Bar dataKey="유튜브" stackId="a" fill="#ef4444"/>
+                        <Bar dataKey="치지직" stackId="a" fill="#6366f1"/>
+                        <Bar dataKey="SOOP" stackId="a" fill="#f59e0b" radius={[4,4,0,0]}/>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      {['유튜브','치지직','SOOP'].map(p=><div key={p} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:PLATFORM_COLORS[p]}}></div><span className="text-xs text-gray-500">{p}</span></div>)}
                     </div>
                   </div>
 
