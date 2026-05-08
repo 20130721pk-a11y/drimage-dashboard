@@ -407,7 +407,15 @@ export default function Home() {
           freq[w] = (freq[w] || 0) + 1
       })
     })
-    return Object.entries(freq).map(([name, count]) => ({ name, count, cat: '방송' })).sort((a,b)=>b.count-a.count).slice(0,20)
+    // 키워드별 카테고리 매핑 (스트림 카테고리 기준)
+    const catMap: Record<string, string> = {}
+    filteredStreams.forEach(s => {
+      const cat = s.category || '업계'
+      ;(s.tags || []).forEach(t => { if (!catMap[t]) catMap[t] = cat })
+      const ws: string[] = s.title?.match(/[가-힣a-zA-Z]{2,}/g) || []
+      ws.forEach(w => { if (!catMap[w]) catMap[w] = cat })
+    })
+    return Object.entries(freq).map(([name, count]) => ({ name, count, cat: catMap[name] || '업계' })).sort((a,b)=>b.count-a.count).slice(0,25)
   }, [filteredStreams])
 
   // 방송 횟수 TOP 5
