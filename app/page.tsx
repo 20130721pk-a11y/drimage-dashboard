@@ -879,7 +879,7 @@ export default function Home() {
                       <p className="text-xs text-gray-500 font-medium">☁️ 방송 키워드</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
                     </div>
-                    <WordCloud words={streamKeywordFreq} />
+                    <WordCloud words={streamKeywordFreq} onWordClick={(word: string) => { setSelectedStreamKeyword(selectedStreamKeyword === word ? '' : word); scrollToList() }} selectedWord={selectedStreamKeyword} />
                   </div>
 
                   {/* 인기 채널 TOP 5 - 탭 */}
@@ -1263,7 +1263,7 @@ export default function Home() {
                       <p className="text-xs text-gray-500 font-medium">☁️ 방송 키워드</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
                     </div>
-                    <WordCloud words={streamKeywordFreq} />
+                    <WordCloud words={commKeywordFreq} onWordClick={(word: string) => { setSelectedCommKeyword(selectedCommKeyword === word ? '' : word); scrollToList() }} selectedWord={selectedCommKeyword} />
                   </div>
 
                   {/* 인기 채널 TOP 5 - 탭 */}
