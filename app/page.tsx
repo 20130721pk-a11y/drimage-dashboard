@@ -135,6 +135,9 @@ export default function Home() {
   const [platformModal, setPlatformModal] = useState<string | null>(null)
   const [coverChannelModal, setCoverChannelModal] = useState<boolean>(false)
   const [streamInfoTab, setStreamInfoTab] = useState<'keywords'|'multi'>('keywords')
+  const [influencerModal, setInfluencerModal] = useState<boolean>(false)
+  const [influencerCatTab, setInfluencerCatTab] = useState<'전체'|'자사'|'경쟁사'>('전체')
+  const [influencerTier, setInfluencerTier] = useState<'S'|'A'|'B'|'C'>('S')
   const [coverageModal, setCoverageModal] = useState<string | null>(null)
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
@@ -428,6 +431,26 @@ export default function Home() {
       return kstHour === h
     }).length
   })), [filteredStreams])
+
+  // 인플루언서 가치 점수
+  const influencerData = useMemo(() => {
+    const channelMap: Record<string, {name:string, platform:string, url:string, category:string, streams:any[]}> = {}
+    streams.forEach(s => {
+      if (!s.channel_name) return
+      if (!channelMap[s.channel_name]) channelMap[s.channel_name] = {name:s.channel_name, platform:s.platform||'', url:s.url||'', category:s.category||'', streams:[]}
+      channelMap[s.channel_name].streams.push(s)
+    })
+    return Object.values(channelMap).map(ch => {
+      const count = ch.streams.length
+      const avgViewers = Math.round(ch.streams.reduce((s:number,x:any)=>s+(x.viewer_count||0),0)/(count||1))
+      const lastDate = ch.streams.reduce((a:string,s:any)=>(s.started_at||'')>a?(s.started_at||''):a,'')
+      const daysSince = lastDate ? Math.floor((Date.now()-new Date(lastDate).getTime())/86400000) : 999
+      const recency = daysSince<=1?50:daysSince<=7?30:daysSince<=14?15:daysSince<=30?5:0
+      const score = Math.round(count*10 + avgViewers*0.05 + recency)
+      const tier: 'S'|'A'|'B'|'C' = score>=150?'S':score>=80?'A':score>=30?'B':'C'
+      return {...ch, count, avgViewers, lastDate, daysSince, score, tier}
+    }).sort((a,b)=>b.score-a.score)
+  }, [streams])
 
   // 방송 요일별 패턴
   const streamWeekdayData = useMemo(() => {
@@ -1035,106 +1058,43 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* ⑤⑦ 키워드 트렌드 / 멀티 커버 채널 탭 */}
+                  {/* 인플루언서 가치 지수 카드 */}
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex gap-1 bg-gray-700 p-0.5 rounded-lg">
-                        <button onClick={() => setStreamInfoTab('keywords')} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${streamInfoTab==='keywords'?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>📊 키워드 트렌드</button>
-                        <button onClick={() => setStreamInfoTab('multi')} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${streamInfoTab==='multi'?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>🔀 멀티 커버</button>
-                      </div>
-                      <p className="text-xs text-gray-600">{periodLabel}</p>
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-gray-500 font-medium">🏆 인플루언서 가치 지수</p>
+                      <button onClick={() => setInfluencerModal(true)} className="text-xs px-3 py-1 rounded-full bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-600/50 transition-colors">전체 보기 →</button>
                     </div>
-
-                    {streamInfoTab === 'keywords' && (() => {
-                      const stopwords = new Set(['라이브','방송','게임','중','하는','해요','합니다','영상','플레이','스트림','시작','진행','오늘','현재','같이','그리고','gg','vs','with','the','and','for'])
-                      const getTopKw = (cat: string) => {
-                        const freq: Record<string,number> = {}
-                        filteredStreams.filter(s=>s.category===cat).forEach(s=>{
-                          const words: string[] = (s.title||'').match(/[가-힣a-zA-Z]{2,}/g)||[]
-                          words.forEach((w: string)=>{ if(!stopwords.has(w.toLowerCase())) freq[w]=(freq[w]||0)+1 })
-                        })
-                        return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5)
-                      }
-                      const myKw = getTopKw('자사')
-                      const compKw = getTopKw('경쟁사')
-                      const maxVal = Math.max(...myKw.map(k=>k[1]), ...compKw.map(k=>k[1]), 1)
+                    {(() => {
+                      const TIER_COLORS: Record<string,string> = {S:'#f59e0b',A:'#8b5cf6',B:'#3b82f6',C:'#6b7280'}
+                      const tierCounts = ['S','A','B','C'].map(t=>({tier:t, count:influencerData.filter(c=>c.tier===t).length}))
+                      const top3 = influencerData.slice(0,3)
                       return (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs font-semibold mb-2" style={{color:COLORS['자사']}}>자사 방송 키워드</p>
-                            {myKw.length === 0
-                              ? <p className="text-xs text-gray-600 py-4 text-center">데이터 없음</p>
-                              : myKw.map(([kw,cnt])=>(
-                              <div key={kw} className="mb-2">
-                                <div className="flex justify-between text-xs mb-0.5">
-                                  <span className="text-gray-300 truncate max-w-[80px]">{kw}</span>
-                                  <span className="text-gray-500">{cnt}</span>
-                                </div>
-                                <div className="h-1.5 bg-gray-700 rounded-full">
-                                  <div className="h-1.5 rounded-full" style={{width:`${cnt/maxVal*100}%`,backgroundColor:COLORS['자사']}}></div>
-                                </div>
+                        <>
+                          <div className="grid grid-cols-4 gap-2 mb-4">
+                            {tierCounts.map(({tier,count})=>(
+                              <div key={tier} className="bg-gray-700/50 rounded-xl p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors" onClick={()=>{setInfluencerTier(tier as any);setInfluencerModal(true)}}>
+                                <p className="text-lg font-bold mb-0.5" style={{color:TIER_COLORS[tier]}}>{tier}</p>
+                                <p className="text-white font-semibold text-sm">{count}</p>
+                                <p className="text-gray-500 text-xs">명</p>
                               </div>
                             ))}
                           </div>
-                          <div>
-                            <p className="text-xs font-semibold mb-2" style={{color:COLORS['경쟁사']}}>경쟁사 방송 키워드</p>
-                            {compKw.length === 0
-                              ? <p className="text-xs text-gray-600 py-4 text-center">데이터 없음</p>
-                              : compKw.map(([kw,cnt])=>(
-                              <div key={kw} className="mb-2">
-                                <div className="flex justify-between text-xs mb-0.5">
-                                  <span className="text-gray-300 truncate max-w-[80px]">{kw}</span>
-                                  <span className="text-gray-500">{cnt}</span>
+                          <div className="space-y-2">
+                            {top3.map((ch,i)=>(
+                              <div key={ch.name} className="flex items-center gap-3 p-2 rounded-xl bg-gray-700/30">
+                                <span className={`text-xs font-bold w-4 text-center ${i===0?'text-yellow-400':i===1?'text-gray-300':'text-amber-600'}`}>{i+1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-white text-xs font-medium truncate">{ch.name}</p>
+                                    <span className="text-xs flex-shrink-0" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</span>
+                                  </div>
+                                  <p className="text-gray-500 text-xs">{ch.count}회 · 평균 {ch.avgViewers.toLocaleString()}명</p>
                                 </div>
-                                <div className="h-1.5 bg-gray-700 rounded-full">
-                                  <div className="h-1.5 rounded-full" style={{width:`${cnt/maxVal*100}%`,backgroundColor:COLORS['경쟁사']}}></div>
-                                </div>
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{backgroundColor:TIER_COLORS[ch.tier]+'22',color:TIER_COLORS[ch.tier]}}>{ch.tier}</span>
                               </div>
                             ))}
                           </div>
-                        </div>
-                      )
-                    })()}
-
-                    {streamInfoTab === 'multi' && (() => {
-                      const myChannels = new Set(filteredStreams.filter(s=>s.category==='자사').map(s=>s.channel_name).filter(Boolean))
-                      const compChannels = new Set(filteredStreams.filter(s=>s.category==='경쟁사').map(s=>s.channel_name).filter(Boolean))
-                      const multiChannels = [...myChannels].filter(c=>compChannels.has(c)).map(name=>{
-                        const chStreams = filteredStreams.filter(s=>s.channel_name===name)
-                        const cats = [...new Set(chStreams.map(s=>s.category))]
-                        const platform = chStreams[0]?.platform||''
-                        const url = chStreams.find(s=>s.url)?.url||''
-                        const games = [...new Set(chStreams.flatMap(s=>s.tags||[]))].slice(0,3)
-                        return {name, cats, platform, url, games, count:chStreams.length}
-                      }).sort((a,b)=>b.count-a.count)
-                      if (!multiChannels.length) return (
-                        <div className="flex flex-col items-center justify-center py-6 gap-2">
-                          <p className="text-2xl">🔀</p>
-                          <p className="text-xs text-gray-500 text-center">자사 + 경쟁사 게임을<br/>동시에 방송한 채널 없음</p>
-                        </div>
-                      )
-                      return (
-                        <div className="space-y-2">
-                          {multiChannels.slice(0,5).map((ch,i)=>(
-                            <div key={ch.name} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-700/40 transition-colors">
-                              <span className={`text-xs font-bold w-4 text-center flex-shrink-0 ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                  <p className="text-white text-xs font-medium truncate">{ch.name}</p>
-                                  <span className="text-xs flex-shrink-0" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</span>
-                                </div>
-                                <div className="flex gap-1 flex-wrap">
-                                  {ch.cats.map(cat=><span key={cat} className="text-xs px-1.5 py-0.5 rounded-full" style={{backgroundColor:COLORS[cat]+'22',color:COLORS[cat]}}>{cat}</span>)}
-                                  {ch.games.map(g=><span key={g} className="text-xs px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-400">{g}</span>)}
-                                </div>
-                              </div>
-                              <div className="text-right flex-shrink-0">
-                                <p className="text-xs text-gray-400">{ch.count}회</p>
-                                {ch.url && <a href={ch.url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-400 hover:opacity-80" onClick={e=>e.stopPropagation()}>→</a>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        </>
                       )
                     })()}
                   </div>
@@ -1202,6 +1162,112 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {/* 인플루언서 가치 지수 모달 */}
+                {influencerModal && (() => {
+                  const TIER_COLORS: Record<string,string> = {S:'#f59e0b',A:'#8b5cf6',B:'#3b82f6',C:'#6b7280'}
+                  const TIER_DESC: Record<string,string> = {S:'핵심 협업 대상',A:'우선 검토 대상',B:'모니터링 유지',C:'잠재 발굴 대상'}
+                  const filtered = influencerData.filter(ch =>
+                    influencerCatTab === '전체' || ch.category === influencerCatTab
+                  ).filter(ch => ch.tier === influencerTier).slice(0,20)
+                  const tierCounts = (['S','A','B','C'] as const).map(t=>({
+                    tier:t, count: influencerData.filter(ch=>(influencerCatTab==='전체'||ch.category===influencerCatTab)&&ch.tier===t).length
+                  }))
+                  return (
+                    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={()=>setInfluencerModal(false)}>
+                      <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e=>e.stopPropagation()}>
+                        {/* 헤더 */}
+                        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+                          <div>
+                            <h3 className="text-white font-bold text-base">🏆 인플루언서 가치 지수</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">방송 빈도 · 시청자 수 · 최근성 기반 협업 가치 산정</p>
+                          </div>
+                          <button onClick={()=>setInfluencerModal(false)} className="text-gray-500 hover:text-white text-lg">✕</button>
+                        </div>
+
+                        {/* 카테고리 탭 */}
+                        <div className="flex items-center gap-3 px-5 pt-4">
+                          <div className="flex gap-1 bg-gray-800 p-0.5 rounded-lg border border-gray-700">
+                            {(['전체','자사','경쟁사'] as const).map(cat=>(
+                              <button key={cat} onClick={()=>setInfluencerCatTab(cat)}
+                                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${influencerCatTab===cat?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>
+                                {cat}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-600 ml-auto">총 {influencerData.filter(ch=>influencerCatTab==='전체'||ch.category===influencerCatTab).length}명</p>
+                        </div>
+
+                        {/* Tier 탭 */}
+                        <div className="flex gap-2 px-5 pt-3 pb-1">
+                          {tierCounts.map(({tier,count})=>(
+                            <button key={tier} onClick={()=>setInfluencerTier(tier as any)}
+                              className={`flex-1 rounded-xl py-2.5 text-center transition-all border ${influencerTier===tier?'border-transparent':'border-gray-700 bg-gray-800/50 hover:bg-gray-800'}`}
+                              style={influencerTier===tier?{backgroundColor:TIER_COLORS[tier]+'22',borderColor:TIER_COLORS[tier]+'66'}:{}}>
+                              <p className="font-bold text-sm" style={{color:TIER_COLORS[tier]}}>{tier}</p>
+                              <p className="text-white text-xs font-semibold">{count}명</p>
+                              <p className="text-gray-500 text-xs">{TIER_DESC[tier]}</p>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* 스트리머 목록 */}
+                        <div className="overflow-y-auto flex-1 p-4">
+                          {filtered.length === 0
+                            ? <div className="text-center py-12">
+                                <p className="text-2xl mb-2">📭</p>
+                                <p className="text-gray-500 text-sm">{influencerTier} Tier 스트리머 없음</p>
+                              </div>
+                            : <div className="grid grid-cols-2 gap-2">
+                                {filtered.map((ch,i)=>(
+                                  <div key={ch.name} className="bg-gray-800 rounded-xl p-3 border border-gray-700 hover:border-gray-600 transition-colors">
+                                    <div className="flex items-start gap-2 mb-2">
+                                      <span className={`text-xs font-bold w-5 text-center mt-0.5 flex-shrink-0 ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <p className="text-white text-xs font-semibold truncate max-w-[120px]">{ch.name}</p>
+                                          <span className="text-xs flex-shrink-0" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</span>
+                                          <span className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 font-bold" style={{backgroundColor:TIER_COLORS[ch.tier]+'22',color:TIER_COLORS[ch.tier]}}>{ch.tier}</span>
+                                        </div>
+                                        <span className="text-xs px-1.5 py-0.5 rounded-full mt-0.5 inline-block" style={{backgroundColor:COLORS[ch.category]+'22',color:COLORS[ch.category]}}>{ch.category}</span>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1 text-center mb-2">
+                                      <div className="bg-gray-700/50 rounded-lg p-1.5">
+                                        <p className="text-white text-xs font-bold">{ch.count}</p>
+                                        <p className="text-gray-500 text-xs">방송</p>
+                                      </div>
+                                      <div className="bg-gray-700/50 rounded-lg p-1.5">
+                                        <p className="text-white text-xs font-bold">{ch.avgViewers>0?ch.avgViewers.toLocaleString():'-'}</p>
+                                        <p className="text-gray-500 text-xs">평균시청</p>
+                                      </div>
+                                      <div className="bg-gray-700/50 rounded-lg p-1.5">
+                                        <p className="font-bold text-xs" style={{color:TIER_COLORS[ch.tier]}}>{ch.score}</p>
+                                        <p className="text-gray-500 text-xs">점수</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-gray-600 text-xs">{ch.daysSince===0?'오늘':ch.daysSince===999?'-':`${ch.daysSince}일 전`}</p>
+                                      {ch.url && <a href={ch.url} target="_blank" rel="noopener noreferrer"
+                                        className="text-xs px-2 py-0.5 rounded-full border hover:opacity-80"
+                                        style={{color:PLATFORM_COLORS[ch.platform],borderColor:PLATFORM_COLORS[ch.platform]+'44',backgroundColor:PLATFORM_COLORS[ch.platform]+'11'}}
+                                        onClick={e=>e.stopPropagation()}>채널 →</a>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                          }
+                        </div>
+
+                        {/* 하단 점수 기준 안내 */}
+                        <div className="px-5 py-3 border-t border-gray-800 flex gap-4">
+                          <p className="text-xs text-gray-600">📌 점수 = 방송횟수×10 + 평균시청자×0.05 + 최근성보너스</p>
+                          <p className="text-xs text-gray-600">· S≥150 · A≥80 · B≥30 · C&lt;30</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* 자사 게임 커버 채널 모달 */}
                 {coverChannelModal && (() => {
