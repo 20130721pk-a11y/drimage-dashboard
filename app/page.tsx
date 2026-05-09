@@ -401,7 +401,7 @@ export default function Home() {
     vod: streams.filter(s => s.platform === p && !s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length,
   }))
   const liveCount = streams.filter(s => s.is_live).length
-  const streamCatCount = ['자사', '경쟁사'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat && (s.started_at||'') >= df && (s.started_at||'') <= dt).length }))
+  const streamCatCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat && (s.started_at||'') >= df && (s.started_at||'') <= dt).length }))
 
   // 커뮤니티 통계
   const dateFilteredKeywordPosts = keywordPosts.filter(p => {
@@ -1446,7 +1446,7 @@ export default function Home() {
                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4" ref={listRef}>
                   <div className="flex flex-wrap gap-2 items-center">
                     <div className="flex gap-1">
-                      {['전체','자사','경쟁사'].map(cat => (
+                      {['전체','자사','경쟁사','업계'].map(cat => (
                         <button key={cat} onClick={() => {setStreamCategory(cat);setStreamSegment('')}} className={`px-3 py-1.5 rounded-full text-xs font-medium ${streamCategory===cat&&!streamSegment?'bg-white text-gray-900':'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>{cat}</button>
                       ))}
                     </div>
