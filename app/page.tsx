@@ -24,6 +24,8 @@ const SEGMENT_ALIASES: Record<string, string[]> = {
   '이터널리턴':    ['이터널리턴','이터널 리턴','eternal return','eternalreturn','블랙서바이벌'],
   '배틀그라운드':  ['배틀그라운드','pubg','battlegrounds','배그'],
   '발로란트':      ['발로란트','valorant'],
+  '오버워치2':      ['오버워치2','오버워치','overwatch2','overwatch'],
+  '에이펙스 레전드': ['에이펙스 레전드','에이펙스','apex legends','apex'],
 }
 
 const PLATFORM_COLORS: Record<string, string> = { '유튜브': '#ef4444', '치지직': '#02C75A', 'SOOP': '#006EFF' }
