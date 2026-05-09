@@ -143,6 +143,7 @@ export default function Home() {
   const [coverageModal, setCoverageModal] = useState<string | null>(null)
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [commKwDetailTab, setCommKwDetailTab] = useState<string>('드림에이지')
+  const [commSubKeyword, setCommSubKeyword] = useState<string>('전체')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -235,7 +236,17 @@ export default function Home() {
     return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate && matchStreamKw
   }), [streams, streamCategory, streamPlatform, streamSearch, streamType, streamSegment, df, dt, selectedStreamKeyword])
 
-  const currentKeywords = COMM_KEYWORDS[commKeyword] || []
+  const COMM_SUB_KEYWORDS: Record<string,string[]> = {
+    '드림에이지': ['드림에이지'],
+    '알케론': ['알케론','arkheron','Arkheron'],
+    '아키텍트': ['아키텍트'],
+    '포트나이트': ['포트나이트'], '이터널리턴': ['이터널리턴'],
+    '배틀그라운드': ['배틀그라운드'], '발로란트': ['발로란트'],
+    '리그오브레전드': ['리그오브레전드'], '오버워치2': ['오버워치2'], '에이펙스 레전드': ['에이펙스 레전드'],
+  }
+  const currentKeywords = commSubKeyword !== '전체' && COMM_SUB_KEYWORDS[commSubKeyword]
+    ? COMM_SUB_KEYWORDS[commSubKeyword]
+    : COMM_KEYWORDS[commKeyword] || []
   const keywordPosts = posts.filter(p => currentKeywords.some(kw => p.keyword === kw || p.title?.includes(kw)))
   const filteredPosts = useMemo(() => keywordPosts.filter(p => {
     const matchSentiment = commSentiment === '전체' || p.sentiment === commSentiment
@@ -1523,11 +1534,34 @@ export default function Home() {
                 {/* 자사/경쟁작 토글 */}
                 <div className="flex gap-2 mb-4">
                   {Object.keys(COMM_KEYWORDS).map(kw => (
-                    <button key={kw} onClick={() => {setCommKeyword(kw);setCommSentiment('전체');setCommCommunity('전체')}} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all border ${commKeyword===kw?'border-transparent text-white shadow-lg':'border-gray-700 text-gray-400 hover:text-white'}`} style={commKeyword===kw?{backgroundColor:kw==='자사'?'#4f46e5':'#dc2626'}:{}}>
+                    <button key={kw} onClick={() => {setCommKeyword(kw);setCommSentiment('전체');setCommCommunity('전체');setCommSubKeyword('전체')}} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all border ${commKeyword===kw?'border-transparent text-white shadow-lg':'border-gray-700 text-gray-400 hover:text-white'}`} style={commKeyword===kw?{backgroundColor:kw==='자사'?'#4f46e5':'#dc2626'}:{}}>
                       {kw === '자사' ? '🏢 자사' : '⚔️ 경쟁작'}
                     </button>
                   ))}
                 </div>
+
+                {/* 하위 키워드 필터 */}
+                {commKeyword === '자사' && (
+                  <div className="flex gap-2 mb-4">
+                    {['전체','드림에이지','알케론','아키텍트'].map(sub => (
+                      <button key={sub} onClick={() => setCommSubKeyword(sub)}
+                        className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all border ${commSubKeyword===sub?'text-white border-transparent':'border-gray-700 text-gray-400 hover:text-white'}`}
+                        style={commSubKeyword===sub?{backgroundColor: sub==='드림에이지'?'#6366f1':sub==='알케론'?'#10b981':sub==='아키텍트'?'#f59e0b':'#374151'}:{}}>
+                        {sub === '전체' ? '전체' : sub}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {commKeyword === '경쟁사' && (
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    {['전체','포트나이트','이터널리턴','배틀그라운드','발로란트','리그오브레전드','오버워치2','에이펙스 레전드'].map(sub => (
+                      <button key={sub} onClick={() => setCommSubKeyword(sub)}
+                        className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all border ${commSubKeyword===sub?'bg-red-600 text-white border-transparent':'border-gray-700 text-gray-400 hover:text-white'}`}>
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* 벤토 Summary */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
