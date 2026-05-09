@@ -1637,18 +1637,23 @@ export default function Home() {
                     </button>
                   ))}
 
-                  {/* 7일 추이 */}
+                  {/* 키워드별 7일 추이 */}
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-2">📈 7일간 감성 추이</p>
-                    <ResponsiveContainer width="100%" height={130}>
-                      <LineChart data={comm7d}>
-                        <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'12px' }} />
-                        <Line type="monotone" dataKey="긍정" stroke="#10b981" strokeWidth={2} dot={false} />
-                        <Line type="monotone" dataKey="부정" stroke="#ef4444" strokeWidth={2} dot={false} />
-                        <Line type="monotone" dataKey="중립" stroke="#6b7280" strokeWidth={1} dot={false} strokeDasharray="4 2" />
+                    <p className="text-xs text-gray-500 font-medium mb-2">📈 키워드별 7일 추이</p>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <LineChart data={commKeyword7d}>
+                        <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                        <Line type="monotone" dataKey="드림에이지" stroke="#6366f1" strokeWidth={2} dot={false}/>
+                        <Line type="monotone" dataKey="알케론" stroke="#10b981" strokeWidth={2} dot={false}/>
+                        <Line type="monotone" dataKey="아키텍트" stroke="#f59e0b" strokeWidth={2} dot={false}/>
                       </LineChart>
                     </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      {[['드림에이지','#6366f1'],['알케론','#10b981'],['아키텍트','#f59e0b']].map(([k,col])=>(
+                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
