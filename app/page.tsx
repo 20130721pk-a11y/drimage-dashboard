@@ -271,7 +271,7 @@ export default function Home() {
     const matchCommunity = commCommunity === '전체' || p.community === commCommunity
     const matchSearch = p.title?.toLowerCase().includes(commSearch.toLowerCase())
     const matchCommKw = !selectedCommKeyword || p.title?.includes(selectedCommKeyword) || p.content?.includes(selectedCommKeyword)
-    const meta = COMMUNITY_META[p.community] || {}
+    const meta = COMMUNITY_META[p.community] || { category: '', gender: '', age: '' }
     const matchCategory = commCategoryFilter === '전체' || meta.category === commCategoryFilter
     const matchGender = commGenderFilter === '전체' || meta.gender === commGenderFilter
     const dateVal = p.posted_at || p.collected_at || ''
