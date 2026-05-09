@@ -589,6 +589,41 @@ export default function Home() {
     [dateFilteredKeywordPosts]
   )
 
+  // 커뮤니티 요일별 패턴
+  const commWeekdayData = useMemo(() => {
+    const dayNames = ['일','월','화','수','목','금','토']
+    return dayNames.map((day, i) => ({
+      day,
+      웹진: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['인벤','루리웹'].includes(p.community) }).length,
+      게임특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['디시인사이드','아카라이브'].includes(p.community) }).length,
+      유저특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['네이버카페','에펨코리아','네이트판'].includes(p.community) }).length,
+    }))
+  }, [dateFilteredKeywordPosts])
+
+  // 커뮤니티 시간대별 게시물량
+  const commHourlyData = useMemo(() => Array.from({length:24}, (_, h) => ({
+    hour: `${h}시`, h,
+    count: dateFilteredKeywordPosts.filter(p => {
+      const d = p.posted_at || p.collected_at
+      if (!d) return false
+      const kstHour = (new Date(d).getUTCHours()+9)%24
+      return kstHour === h
+    }).length
+  })), [dateFilteredKeywordPosts])
+
+  // 커뮤니티 7일간 카테고리별 추이
+  const comm7dByCat = useMemo(() => Array.from({length:7}, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate()-(6-i))
+    const ds = d.toISOString().split('T')[0]
+    const byComm = (comms: string[]) => posts.filter(p => comms.includes(p.community) && (p.collected_at||'').startsWith(ds)).length
+    return {
+      date: `${d.getMonth()+1}/${d.getDate()}`,
+      웹진: byComm(['인벤','루리웹']),
+      게임특화: byComm(['디시인사이드','아카라이브']),
+      유저특화: byComm(['네이버카페','에펨코리아','네이트판']),
+    }
+  }), [posts])
+
   const posRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[0].value / dateFilteredKeywordPosts.length * 100) : 0
   const negRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[1].value / dateFilteredKeywordPosts.length * 100) : 0
 
@@ -1650,77 +1685,7 @@ export default function Home() {
                   )
                 })()}
 
-                {/* 2번째 row */}
-                <div className="grid grid-cols-12 gap-4 mb-6">
-                  {/* 커뮤니티별 언급량 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">커뮤니티별 언급량</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
-                    </div>
-                    <ResponsiveContainer width="100%" height={140}>
-                      <BarChart data={commCount} onClick={(d:any)=>{if(d?.activeLabel)handleCommClick(undefined,d.activeLabel)}}>
-                        <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <YAxis hide />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'12px' }} />
-                        <Bar dataKey="value" radius={[4,4,0,0]} style={{cursor:'pointer'}}>
-                          {commCount.map(e => <Cell key={e.name} fill={COMMUNITY_COLORS[e.name]||'#6b7280'} />)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* 자사 vs 경쟁작 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-3"><p className="text-xs text-gray-500 font-medium">🆚 자사 vs 경쟁작 감성</p><p className="text-xs text-gray-600">{periodLabel} 기준</p></div>
-                    <ResponsiveContainer width="100%" height={140}>
-                      <BarChart data={vsData}>
-                        <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis hide />
-                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', fontSize:'12px' }} />
-                        <Bar dataKey="긍정" stackId="a" fill="#10b981" />
-                        <Bar dataKey="중립" stackId="a" fill="#6b7280" />
-                        <Bar dataKey="부정" stackId="a" fill="#ef4444" radius={[4,4,0,0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* 긍정/부정 요약 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4"><p className="text-xs text-gray-500 font-medium">감성 요약</p><p className="text-xs text-gray-600">{periodLabel} 기준</p></div>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-green-400">긍정</span>
-                          <span className="text-green-400">{posRate}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-700 rounded-full">
-                          <div className="h-2 bg-green-500 rounded-full" style={{ width: `${posRate}%` }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-red-400">부정</span>
-                          <span className="text-red-400">{negRate}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-700 rounded-full">
-                          <div className="h-2 bg-red-500 rounded-full" style={{ width: `${negRate}%` }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-400">중립</span>
-                          <span className="text-gray-400">{100-posRate-negRate}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-700 rounded-full">
-                          <div className="h-2 bg-gray-500 rounded-full" style={{ width: `${100-posRate-negRate}%` }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 커뮤니티 시각화 - Row 3 */}
+                {/* 2번째 row - 방송탭 스타일 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
                   {/* 커뮤니티 워드클라우드 */}
                   <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
@@ -1731,6 +1696,90 @@ export default function Home() {
                     <WordCloud words={commKeywordFreq} onWordClick={(word: string) => { setSelectedCommKeyword(selectedCommKeyword === word ? '' : word); scrollToList() }} selectedWord={selectedCommKeyword} />
                   </div>
 
+                  {/* 7일간 카테고리별 추이 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">📈 7일간 카테고리별 추이</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={comm7dByCat}>
+                        <defs>
+                          <linearGradient id="gradWJ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradGT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradYT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                        <Area type="monotone" dataKey="웹진" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradWJ)"/>
+                        <Area type="monotone" dataKey="게임특화" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradGT)"/>
+                        <Area type="monotone" dataKey="유저특화" stroke="#10b981" strokeWidth={1.5} fill="url(#gradYT)"/>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      {[['웹진','#6366f1'],['게임특화','#ef4444'],['유저특화','#10b981']].map(([k,col])=>(
+                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 요일별 게시물 패턴 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">📅 요일별 게시물 패턴</p>
+                      <span className="text-xs text-indigo-400 font-medium">
+                        최다: {commWeekdayData.reduce((a,b)=>(a.웹진+a.게임특화+a.유저특화)>(b.웹진+b.게임특화+b.유저특화)?a:b).day}요일
+                      </span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={commWeekdayData} barCategoryGap="20%">
+                        <XAxis dataKey="day" tick={{fill:'#9ca3af',fontSize:12}} axisLine={false} tickLine={false}/>
+                        <YAxis tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false} width={25}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`${v}건`,n]}/>
+                        <Bar dataKey="웹진" stackId="a" fill="#6366f1"/>
+                        <Bar dataKey="게임특화" stackId="a" fill="#ef4444"/>
+                        <Bar dataKey="유저특화" stackId="a" fill="#10b981" radius={[4,4,0,0]}/>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      {[['웹진','#6366f1'],['게임특화','#ef4444'],['유저특화','#10b981']].map(([k,col])=>(
+                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 시간대별 게시물량 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 게시물량</p>
+                      <p className="text-xs text-indigo-400 font-medium">피크 {commHourlyData.reduce((a,b)=>a.count>b.count?a:b).hour}</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <BarChart data={commHourlyData} barCategoryGap="5%">
+                        <XAxis dataKey="hour" tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} interval={3}/>
+                        <YAxis tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} width={20}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any)=>[`${v}건`,'게시물량']}/>
+                        <Bar dataKey="count" radius={[3,3,0,0]}>
+                          {commHourlyData.map(h=>{
+                            const max=Math.max(...commHourlyData.map(x=>x.count),1)
+                            return <Cell key={h.h} fill={h.count>0?`rgba(99,102,241,${0.3+(h.count/max)*0.7})`:'#1f2937'}/>
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="grid grid-cols-4 gap-2 mt-3">
+                      {[['새벽','0-6시',0,6],['오전','6-12시',6,12],['오후','12-18시',12,18],['저녁','18-24시',18,24]].map(([label,time,from,to]:any)=>(
+                        <div key={label} className="bg-gray-700/50 rounded-lg p-2 text-center">
+                          <p className="text-gray-500 text-xs">{label}</p>
+                          <p className="text-xs text-gray-600">{time}</p>
+                          <p className="font-bold mt-1 text-indigo-400" style={{fontSize:'14px'}}>{commHourlyData.filter(h=>h.h>=from&&h.h<to).reduce((a,b)=>a+b.count,0)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 커뮤니티 시각화 - Row 3 */}
+                <div className="grid grid-cols-12 gap-4 mb-6">
                   {/* 7일간 자사 키워드별 추이 */}
                   <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
