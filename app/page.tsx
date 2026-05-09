@@ -1702,29 +1702,51 @@ export default function Home() {
                   </div>
 
                   {/* 7일간 카테고리별 추이 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+<div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">📈 7일간 카테고리별 추이</p>
+                      <div className="flex gap-1 bg-gray-700 p-0.5 rounded-lg">
+                        {['드림에이지','알케론','아키텍트'].map(kw=>(
+                          <button key={kw} onClick={()=>setCommKwDetailTab(kw)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${commKwDetailTab===kw?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>{kw}</button>
+                        ))}
+                      </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <AreaChart data={comm7dByCat}>
-                        <defs>
-                          <linearGradient id="gradWJ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
-                          <linearGradient id="gradGT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
-                          <linearGradient id="gradYT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
-                        </defs>
-                        <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
-                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
-                        <Area type="monotone" dataKey="웹진" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradWJ)"/>
-                        <Area type="monotone" dataKey="게임특화" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradGT)"/>
-                        <Area type="monotone" dataKey="유저특화" stroke="#10b981" strokeWidth={1.5} fill="url(#gradYT)"/>
-                      </AreaChart>
-                    </ResponsiveContainer>
-                    <div className="flex gap-4 mt-2">
-                      {[['웹진','#6366f1'],['게임특화','#ef4444'],['유저특화','#10b981']].map(([k,col])=>(
-                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
-                      ))}
-                    </div>
+                    {(() => {
+                      const kwMap: Record<string,string[]> = {'드림에이지':['드림에이지'],'알케론':['알케론','arkheron','Arkheron'],'아키텍트':['아키텍트']}
+                      const kwPosts = dateFilteredKeywordPosts.filter(p => kwMap[commKwDetailTab]?.some(kw=>p.keyword===kw))
+                      const pos = kwPosts.filter(p=>p.sentiment==='긍정').length
+                      const neg = kwPosts.filter(p=>p.sentiment==='부정').length
+                      const neu = kwPosts.filter(p=>p.sentiment==='중립').length
+                      const total = kwPosts.length || 1
+                      const commDist = Object.keys(COMMUNITY_COLORS).map(c=>({name:c,cnt:kwPosts.filter(p=>p.community===c).length})).filter(x=>x.cnt>0).sort((a,b)=>b.cnt-a.cnt)
+                      return (
+                        <>
+                          <div className="flex items-center gap-2 mb-3">
+                            <p className="text-2xl font-bold text-white">{kwPosts.length}</p>
+                            <p className="text-xs text-gray-500">건 언급</p>
+                          </div>
+                          {[['긍정',pos,'#10b981'],['부정',neg,'#ef4444'],['중립',neu,'#6b7280']].map(([label,val,col])=>(
+                            <div key={label} className="mb-1.5">
+                              <div className="flex justify-between text-xs mb-0.5">
+                                <span style={{color:col as string}}>{label}</span>
+                                <span className="text-gray-500">{val}건 ({Math.round((val as number)/total*100)}%)</span>
+                              </div>
+                              <div className="h-1.5 bg-gray-700 rounded-full">
+                                <div className="h-1.5 rounded-full" style={{width:`${(val as number)/total*100}%`,backgroundColor:col as string}}></div>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="mt-3 space-y-1">
+                            {commDist.slice(0,3).map(({name,cnt})=>(
+                              <div key={name} className="flex items-center gap-2 text-xs">
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{backgroundColor:COMMUNITY_COLORS[name]||'#6b7280'}}></span>
+                                <span className="text-gray-400 flex-1">{name}</span>
+                                <span className="text-gray-500">{cnt}건</span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )
+                    })()}
                   </div>
 
                   {/* 요일별 게시물 패턴 */}
@@ -1807,51 +1829,29 @@ export default function Home() {
                   </div>
 
                   {/* 자사 키워드별 상세 탭 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+<div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex gap-1 bg-gray-700 p-0.5 rounded-lg">
-                        {['드림에이지','알케론','아키텍트'].map(kw=>(
-                          <button key={kw} onClick={()=>setCommKwDetailTab(kw)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${commKwDetailTab===kw?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>{kw}</button>
-                        ))}
-                      </div>
+                      <p className="text-xs text-gray-500 font-medium">📈 7일간 카테고리별 추이</p>
                     </div>
-                    {(() => {
-                      const kwMap: Record<string,string[]> = {'드림에이지':['드림에이지'],'알케론':['알케론','arkheron','Arkheron'],'아키텍트':['아키텍트']}
-                      const kwPosts = dateFilteredKeywordPosts.filter(p => kwMap[commKwDetailTab]?.some(kw=>p.keyword===kw))
-                      const pos = kwPosts.filter(p=>p.sentiment==='긍정').length
-                      const neg = kwPosts.filter(p=>p.sentiment==='부정').length
-                      const neu = kwPosts.filter(p=>p.sentiment==='중립').length
-                      const total = kwPosts.length || 1
-                      const commDist = Object.keys(COMMUNITY_COLORS).map(c=>({name:c,cnt:kwPosts.filter(p=>p.community===c).length})).filter(x=>x.cnt>0).sort((a,b)=>b.cnt-a.cnt)
-                      return (
-                        <>
-                          <div className="flex items-center gap-2 mb-3">
-                            <p className="text-2xl font-bold text-white">{kwPosts.length}</p>
-                            <p className="text-xs text-gray-500">건 언급</p>
-                          </div>
-                          {[['긍정',pos,'#10b981'],['부정',neg,'#ef4444'],['중립',neu,'#6b7280']].map(([label,val,col])=>(
-                            <div key={label} className="mb-1.5">
-                              <div className="flex justify-between text-xs mb-0.5">
-                                <span style={{color:col as string}}>{label}</span>
-                                <span className="text-gray-500">{val}건 ({Math.round((val as number)/total*100)}%)</span>
-                              </div>
-                              <div className="h-1.5 bg-gray-700 rounded-full">
-                                <div className="h-1.5 rounded-full" style={{width:`${(val as number)/total*100}%`,backgroundColor:col as string}}></div>
-                              </div>
-                            </div>
-                          ))}
-                          <div className="mt-3 space-y-1">
-                            {commDist.slice(0,3).map(({name,cnt})=>(
-                              <div key={name} className="flex items-center gap-2 text-xs">
-                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{backgroundColor:COMMUNITY_COLORS[name]||'#6b7280'}}></span>
-                                <span className="text-gray-400 flex-1">{name}</span>
-                                <span className="text-gray-500">{cnt}건</span>
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      )
-                    })()}
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={comm7dByCat}>
+                        <defs>
+                          <linearGradient id="gradWJ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradGT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
+                          <linearGradient id="gradYT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
+                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
+                        <Area type="monotone" dataKey="웹진" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradWJ)"/>
+                        <Area type="monotone" dataKey="게임특화" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradGT)"/>
+                        <Area type="monotone" dataKey="유저특화" stroke="#10b981" strokeWidth={1.5} fill="url(#gradYT)"/>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      {[['웹진','#6366f1'],['게임특화','#ef4444'],['유저특화','#10b981']].map(([k,col])=>(
+                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* 최고 반응 게시물 TOP5 */}
