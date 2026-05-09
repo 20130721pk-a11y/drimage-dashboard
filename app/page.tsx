@@ -1831,43 +1831,43 @@ export default function Home() {
                 </div>
 
                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4" ref={listRef}>
-                  {/* 카테고리/성별 필터 */}
-                  <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-gray-700">
-                    <div className="flex gap-1">
-                      {['전체','웹진','게임특화','유저특화'].map(cat => (
-                        <button key={cat} onClick={() => setCommCategoryFilter(cat)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${commCategoryFilter===cat?'text-white border-transparent':'border-gray-600 text-gray-400 hover:text-white'}`}
-                          style={commCategoryFilter===cat?{backgroundColor: cat==='전체'?'#374151':CATEGORY_COLORS[cat]}:{}}>
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-1 ml-2">
-                      {['전체','남성중심','여성중심','혼합'].map(g => (
-                        <button key={g} onClick={() => setCommGenderFilter(g)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${commGenderFilter===g?'text-white border-transparent':'border-gray-600 text-gray-400 hover:text-white'}`}
-                          style={commGenderFilter===g?{backgroundColor: g==='전체'?'#374151':GENDER_COLORS[g]}:{}}>
-                          {g==='전체'?'전체 성별':g}
-                        </button>
-                      ))}
-                    </div>
-                    {commCategoryFilter !== '전체' && <span className="text-xs text-gray-500 self-center">
-                      {Object.entries(COMMUNITY_META).filter(([,m])=>m.category===commCategoryFilter).map(([k])=>k).join(' · ')}
-                    </span>}
+                  {/* Row 1: 카테고리 */}
+                  <div className="flex gap-2 mb-2">
+                    {['전체','웹진','게임특화','유저특화'].map(cat => (
+                      <button key={cat} onClick={() => { setCommCategoryFilter(cat); setCommCommunity('전체') }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${commCategoryFilter===cat?'text-white border-transparent':'border-gray-600 text-gray-400 hover:text-white'}`}
+                        style={commCategoryFilter===cat?{backgroundColor: cat==='전체'?'#374151':CATEGORY_COLORS[cat]}:{}}>
+                        {cat}
+                      </button>
+                    ))}
                   </div>
-                  <div className="flex flex-wrap gap-2 items-center">
+                  {/* Row 2: 채널 (카테고리 선택시) */}
+                  {commCategoryFilter !== '전체' && (
+                    <div className="flex gap-1.5 flex-wrap mb-2 pb-2 border-b border-gray-700">
+                      {['전체', ...Object.entries(COMMUNITY_META)
+                        .filter(([,m]) => m.category === commCategoryFilter)
+                        .map(([k]) => k)
+                      ].map(ch => (
+                        <button key={ch} onClick={() => setCommCommunity(ch)}
+                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${commCommunity===ch?'text-white':'bg-gray-700/50 text-gray-400 hover:text-white'}`}
+                          style={commCommunity===ch?{backgroundColor: ch==='전체'?'#4b5563':COMMUNITY_COLORS[ch]||CATEGORY_COLORS[commCategoryFilter]}:{}}>
+                          {ch === '전체' ? '전체 채널' : ch}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {commCategoryFilter === '전체' && <div className="border-b border-gray-700 mb-2"></div>}
+                  {/* Row 3: 감성 + 검색 */}
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex gap-1">
                       {['전체','긍정','부정','중립'].map(s => (
                         <button key={s} onClick={() => setCommSentiment(s)} className={`px-3 py-1.5 rounded-full text-xs font-medium ${commSentiment===s?'text-white':'bg-gray-700 text-gray-400 hover:bg-gray-600'}`} style={commSentiment===s&&s!=='전체'?{backgroundColor:SENTIMENT_COLORS[s]}:commSentiment===s?{backgroundColor:'#374151',color:'white'}:{}}>{s}</button>
                       ))}
                     </div>
-                    <div className="flex gap-1 ml-auto flex-wrap">
-                      {['전체',...Object.keys(COMMUNITY_COLORS)].map(c => (
-                        <button key={c} onClick={() => setCommCommunity(c)} className={`px-3 py-1.5 rounded-lg text-xs ${commCommunity===c?'text-white':'bg-gray-700 text-gray-400 hover:bg-gray-600'}`} style={commCommunity===c&&c!=='전체'?{backgroundColor:COMMUNITY_COLORS[c]}:commCommunity===c?{backgroundColor:'#374151',color:'white'}:{}}>{c}</button>
-                      ))}
+                    <div className="ml-auto flex items-center gap-2">
+                      {selectedCommKeyword && <button onClick={() => setSelectedCommKeyword('')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600/30 text-indigo-300 border border-indigo-500/50">☁️ {selectedCommKeyword} <span className="opacity-60">✕</span></button>}
+                      <input type="text" placeholder="검색..." value={commSearch} onChange={e => setCommSearch(e.target.value)} className="bg-gray-700 text-white px-3 py-1.5 rounded-lg outline-none border border-gray-600 text-xs w-40" />
                     </div>
-                    <input type="text" placeholder="검색..." value={commSearch} onChange={e => setCommSearch(e.target.value)} className="bg-gray-700 text-white px-3 py-1.5 rounded-lg outline-none border border-gray-600 text-xs w-40" />
-                    {selectedCommKeyword && <button onClick={() => setSelectedCommKeyword('')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600/30 text-indigo-300 border border-indigo-500/50">☁️ {selectedCommKeyword} <span className="opacity-60">✕</span></button>}
                   </div>
                   <p className="text-xs text-gray-600 mt-2">{filteredPosts.length}건 표시 중</p>
                 </div>
