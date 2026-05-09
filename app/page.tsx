@@ -41,6 +41,22 @@ const SEGMENTS: Record<string, string[]> = {
   '경쟁사': ['포트나이트', '리그오브레전드', '이터널리턴', '배틀그라운드', '발로란트', '오버워치2', '에이펙스 레전드'],
   '업계': ['신작', '런칭', '사전예약', '얼리액세스', '지스타', '배틀로얄 신작', 'MMORPG 신작', '게임스컴', '도쿄게임쇼', 'GDC', '크로스플랫폼 게임', '스팀 인기 게임'],
 }
+const COMMUNITY_META: Record<string, {category: string, gender: string, age: string}> = {
+  '인벤':       { category: '웹진',     gender: '혼합',    age: '20-30대' },
+  '루리웹':     { category: '웹진',     gender: '혼합',    age: '20-30대' },
+  '디시인사이드':{ category: '게임특화', gender: '남성중심', age: '10-30대' },
+  '아카라이브': { category: '게임특화', gender: '혼합',    age: '10-20대' },
+  '네이버카페': { category: '유저특화', gender: '혼합',    age: '다양'    },
+  '에펨코리아': { category: '유저특화', gender: '남성중심', age: '20-30대' },
+  '네이트판':   { category: '유저특화', gender: '여성중심', age: '20-30대' },
+}
+const CATEGORY_COLORS: Record<string, string> = {
+  '웹진': '#6366f1', '게임특화': '#ef4444', '유저특화': '#10b981', '인플루언서': '#f59e0b'
+}
+const GENDER_COLORS: Record<string, string> = {
+  '남성중심': '#3b82f6', '여성중심': '#ec4899', '혼합': '#8b5cf6'
+}
+
 const SOURCE_MAP: Record<string, string> = { '구글 뉴스': 'Google News', '네이버 뉴스': '네이버 -', '네이버 블로그': '네이버블로그' }
 const COMM_KEYWORDS: Record<string, string[]> = {
   '자사': ['드림에이지', '알케론', 'arkheron', 'Arkheron', '아키텍트'],
@@ -144,6 +160,8 @@ export default function Home() {
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [commKwDetailTab, setCommKwDetailTab] = useState<string>('드림에이지')
   const [commSubKeyword, setCommSubKeyword] = useState<string>('전체')
+  const [commCategoryFilter, setCommCategoryFilter] = useState<string>('전체')
+  const [commGenderFilter, setCommGenderFilter] = useState<string>('전체')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -253,8 +271,11 @@ export default function Home() {
     const matchCommunity = commCommunity === '전체' || p.community === commCommunity
     const matchSearch = p.title?.toLowerCase().includes(commSearch.toLowerCase())
     const matchCommKw = !selectedCommKeyword || p.title?.includes(selectedCommKeyword) || p.content?.includes(selectedCommKeyword)
+    const meta = COMMUNITY_META[p.community] || {}
+    const matchCategory = commCategoryFilter === '전체' || meta.category === commCategoryFilter
+    const matchGender = commGenderFilter === '전체' || meta.gender === commGenderFilter
     const dateVal = p.posted_at || p.collected_at || ''
-    return matchSentiment && matchCommunity && matchSearch && matchCommKw && dateVal >= df && dateVal <= dt
+    return matchSentiment && matchCommunity && matchSearch && matchCommKw && matchCategory && matchGender && dateVal >= df && dateVal <= dt
   }), [keywordPosts, commSentiment, commCommunity, commSearch, df, dt, selectedCommKeyword])
 
   // 뉴스 통계 - 모두 filteredNews 기준으로 통일
@@ -1810,6 +1831,30 @@ export default function Home() {
                 </div>
 
                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4" ref={listRef}>
+                  {/* 카테고리/성별 필터 */}
+                  <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-gray-700">
+                    <div className="flex gap-1">
+                      {['전체','웹진','게임특화','유저특화'].map(cat => (
+                        <button key={cat} onClick={() => setCommCategoryFilter(cat)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${commCategoryFilter===cat?'text-white border-transparent':'border-gray-600 text-gray-400 hover:text-white'}`}
+                          style={commCategoryFilter===cat?{backgroundColor: cat==='전체'?'#374151':CATEGORY_COLORS[cat]}:{}}>
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      {['전체','남성중심','여성중심','혼합'].map(g => (
+                        <button key={g} onClick={() => setCommGenderFilter(g)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${commGenderFilter===g?'text-white border-transparent':'border-gray-600 text-gray-400 hover:text-white'}`}
+                          style={commGenderFilter===g?{backgroundColor: g==='전체'?'#374151':GENDER_COLORS[g]}:{}}>
+                          {g==='전체'?'전체 성별':g}
+                        </button>
+                      ))}
+                    </div>
+                    {commCategoryFilter !== '전체' && <span className="text-xs text-gray-500 self-center">
+                      {Object.entries(COMMUNITY_META).filter(([,m])=>m.category===commCategoryFilter).map(([k])=>k).join(' · ')}
+                    </span>}
+                  </div>
                   <div className="flex flex-wrap gap-2 items-center">
                     <div className="flex gap-1">
                       {['전체','긍정','부정','중립'].map(s => (
