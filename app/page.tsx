@@ -1656,7 +1656,7 @@ export default function Home() {
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <p className="text-xs text-gray-500 font-medium mb-2">📈 키워드별 7일 추이</p>
                     <ResponsiveContainer width="100%" height={100}>
-                      <LineChart data={commKeyword === '자사' ? commKeyword7d : commComp7d}>
+                      <LineChart data={(commKeyword === '자사' ? commKeyword7d : commComp7d) as any[]}>
                         <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
                         <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
                         {commKeyword === '자사' ? (<>
