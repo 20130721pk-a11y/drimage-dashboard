@@ -567,6 +567,21 @@ export default function Home() {
   }).map(s=>s.channel_name).filter(Boolean))
   const newChannels = [...recentChannels].filter(c => !prevChannels.has(c))
 
+  // 경쟁사 키워드별 7일 추이
+  const commComp7d = useMemo(() => Array.from({length:7}, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate()-(6-i))
+    const ds = d.toISOString().split('T')[0]
+    const byKw = (kw: string) => posts.filter(p => p.keyword===kw && (p.collected_at||'').startsWith(ds)).length
+    return {
+      date: `${d.getMonth()+1}/${d.getDate()}`,
+      포트나이트: byKw('포트나이트'),
+      이터널리턴: byKw('이터널리턴'),
+      배틀그라운드: byKw('배틀그라운드'),
+      발로란트: byKw('발로란트'),
+      롤: byKw('리그오브레전드'),
+    }
+  }), [posts])
+
   // 자사 키워드별 7일 추이
   const commKeyword7d = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(); d.setDate(d.getDate()-(6-i))
@@ -1641,18 +1656,31 @@ export default function Home() {
                   <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <p className="text-xs text-gray-500 font-medium mb-2">📈 키워드별 7일 추이</p>
                     <ResponsiveContainer width="100%" height={100}>
-                      <LineChart data={commKeyword7d}>
+                      <LineChart data={commKeyword === '자사' ? commKeyword7d : commComp7d}>
                         <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
                         <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
-                        <Line type="monotone" dataKey="드림에이지" stroke="#6366f1" strokeWidth={2} dot={false}/>
-                        <Line type="monotone" dataKey="알케론" stroke="#10b981" strokeWidth={2} dot={false}/>
-                        <Line type="monotone" dataKey="아키텍트" stroke="#f59e0b" strokeWidth={2} dot={false}/>
+                        {commKeyword === '자사' ? (<>
+                          <Line type="monotone" dataKey="드림에이지" stroke="#6366f1" strokeWidth={2} dot={false}/>
+                          <Line type="monotone" dataKey="알케론" stroke="#10b981" strokeWidth={2} dot={false}/>
+                          <Line type="monotone" dataKey="아키텍트" stroke="#f59e0b" strokeWidth={2} dot={false}/>
+                        </>) : (<>
+                          <Line type="monotone" dataKey="포트나이트" stroke="#ef4444" strokeWidth={2} dot={false}/>
+                          <Line type="monotone" dataKey="이터널리턴" stroke="#8b5cf6" strokeWidth={2} dot={false}/>
+                          <Line type="monotone" dataKey="배틀그라운드" stroke="#f59e0b" strokeWidth={2} dot={false}/>
+                          <Line type="monotone" dataKey="발로란트" stroke="#10b981" strokeWidth={2} dot={false}/>
+                          <Line type="monotone" dataKey="롤" stroke="#3b82f6" strokeWidth={2} dot={false}/>
+                        </>)}
                       </LineChart>
                     </ResponsiveContainer>
-                    <div className="flex gap-4 mt-2">
-                      {[['드림에이지','#6366f1'],['알케론','#10b981'],['아키텍트','#f59e0b']].map(([k,col])=>(
-                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
-                      ))}
+                    <div className="flex gap-3 mt-2 flex-wrap">
+                      {commKeyword === '자사'
+                        ? [['드림에이지','#6366f1'],['알케론','#10b981'],['아키텍트','#f59e0b']].map(([k,col])=>(
+                            <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
+                          ))
+                        : [['포트나이트','#ef4444'],['이터널리턴','#8b5cf6'],['배틀그라운드','#f59e0b'],['발로란트','#10b981'],['롤','#3b82f6']].map(([k,col])=>(
+                            <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
+                          ))
+                      }
                     </div>
                   </div>
                 </div>
@@ -1802,60 +1830,31 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
+                    <div className="mt-3 pt-2 border-t border-gray-700">
+                      <p className="text-xs text-gray-600 mb-1.5">커뮤니티별 비중</p>
+                      <div className="space-y-1">
+                        {Object.entries(COMMUNITY_COLORS).filter(([name])=>dateFilteredKeywordPosts.some(p=>p.community===name)).map(([name,color])=>{
+                          const cnt = dateFilteredKeywordPosts.filter(p=>p.community===name).length
+                          const total = dateFilteredKeywordPosts.length||1
+                          return (
+                            <div key={name} className="flex items-center gap-2">
+                              <span className="text-xs w-14 truncate flex-shrink-0" style={{color}}>{name}</span>
+                              <div className="flex-1 h-1.5 bg-gray-700 rounded-full">
+                                <div className="h-1.5 rounded-full" style={{width:`${cnt/total*100}%`,backgroundColor:color}}></div>
+                              </div>
+                              <span className="text-xs text-gray-400 w-8 text-right">{cnt}건</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* 커뮤니티 시각화 - Row 3 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
-                  {/* 7일간 자사 키워드별 추이 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">📈 자사 키워드별 7일 추이</p>
-                    </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <LineChart data={commKeyword7d}>
-                        <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
-                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
-                        <Line type="monotone" dataKey="드림에이지" stroke="#6366f1" strokeWidth={2} dot={false}/>
-                        <Line type="monotone" dataKey="알케론" stroke="#10b981" strokeWidth={2} dot={false}/>
-                        <Line type="monotone" dataKey="아키텍트" stroke="#f59e0b" strokeWidth={2} dot={false}/>
-                      </LineChart>
-                    </ResponsiveContainer>
-                    <div className="flex gap-4 mt-2">
-                      {[['드림에이지','#6366f1'],['알케론','#10b981'],['아키텍트','#f59e0b']].map(([k,col])=>(
-                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 자사 키워드별 상세 탭 */}
-<div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">📈 7일간 카테고리별 추이</p>
-                    </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <AreaChart data={comm7dByCat}>
-                        <defs>
-                          <linearGradient id="gradWJ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
-                          <linearGradient id="gradGT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
-                          <linearGradient id="gradYT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
-                        </defs>
-                        <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
-                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
-                        <Area type="monotone" dataKey="웹진" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradWJ)"/>
-                        <Area type="monotone" dataKey="게임특화" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradGT)"/>
-                        <Area type="monotone" dataKey="유저특화" stroke="#10b981" strokeWidth={1.5} fill="url(#gradYT)"/>
-                      </AreaChart>
-                    </ResponsiveContainer>
-                    <div className="flex gap-4 mt-2">
-                      {[['웹진','#6366f1'],['게임특화','#ef4444'],['유저특화','#10b981']].map(([k,col])=>(
-                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* 최고 반응 게시물 TOP5 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  <div className="col-span-6 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">🔥 최고 반응 게시물</p>
                       <p className="text-xs text-gray-600">조회+댓글 기준</p>
