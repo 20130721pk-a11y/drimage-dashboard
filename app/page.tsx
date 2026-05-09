@@ -43,8 +43,8 @@ const SEGMENTS: Record<string, string[]> = {
 }
 const SOURCE_MAP: Record<string, string> = { '구글 뉴스': 'Google News', '네이버 뉴스': '네이버 -', '네이버 블로그': '네이버블로그' }
 const COMM_KEYWORDS: Record<string, string[]> = {
-  '자사': ['알케론', 'arkheron', 'Arkheron'],
-  '경쟁사': ['포트나이트', '이터널리턴', '배틀그라운드', '발로란트', '리그오브레전드'],
+  '자사': ['드림에이지', '알케론', 'arkheron', 'Arkheron', '아키텍트'],
+  '경쟁사': ['포트나이트', '이터널리턴', '배틀그라운드', '발로란트', '리그오브레전드', '오버워치2', '에이펙스 레전드'],
 }
 
 function WordCloud({ words, onWordClick, selectedWord }: { words: {name: string, count: number, cat: string}[], onWordClick?: (word: string) => void, selectedWord?: string }) {
@@ -142,6 +142,7 @@ export default function Home() {
   const [influencerTier, setInfluencerTier] = useState<'S'|'A'|'B'|'C'>('S')
   const [coverageModal, setCoverageModal] = useState<string | null>(null)
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
+  const [commKwDetailTab, setCommKwDetailTab] = useState<string>('드림에이지')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -533,6 +534,28 @@ export default function Home() {
     return d < df
   }).map(s=>s.channel_name).filter(Boolean))
   const newChannels = [...recentChannels].filter(c => !prevChannels.has(c))
+
+  // 자사 키워드별 7일 추이
+  const commKeyword7d = useMemo(() => Array.from({length:7}, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate()-(6-i))
+    const ds = d.toISOString().split('T')[0]
+    const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && (p.collected_at||'').startsWith(ds)).length
+    return {
+      date: `${d.getMonth()+1}/${d.getDate()}`,
+      드림에이지: byKw(['드림에이지']),
+      알케론: byKw(['알케론','arkheron','Arkheron']),
+      아키텍트: byKw(['아키텍트']),
+    }
+  }), [posts])
+
+  // 최고 반응 게시물 TOP5
+  const topCommPosts = useMemo(() =>
+    [...dateFilteredKeywordPosts]
+      .filter(p => (p.views||0) > 0 || (p.comments||0) > 0)
+      .sort((a,b) => ((b.views||0)+(b.comments||0)*5) - ((a.views||0)+(a.comments||0)*5))
+      .slice(0, 5),
+    [dateFilteredKeywordPosts]
+  )
 
   const posRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[0].value / dateFilteredKeywordPosts.length * 100) : 0
   const negRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[1].value / dateFilteredKeywordPosts.length * 100) : 0
@@ -1501,7 +1524,7 @@ export default function Home() {
                 <div className="flex gap-2 mb-4">
                   {Object.keys(COMM_KEYWORDS).map(kw => (
                     <button key={kw} onClick={() => {setCommKeyword(kw);setCommSentiment('전체');setCommCommunity('전체')}} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all border ${commKeyword===kw?'border-transparent text-white shadow-lg':'border-gray-700 text-gray-400 hover:text-white'}`} style={commKeyword===kw?{backgroundColor:kw==='자사'?'#4f46e5':'#dc2626'}:{}}>
-                      {kw === '자사' ? '🏢 자사 (알케론)' : '⚔️ 경쟁작'}
+                      {kw === '자사' ? '🏢 자사' : '⚔️ 경쟁작'}
                     </button>
                   ))}
                 </div>
@@ -1642,190 +1665,113 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 필터 */}
-                {/* 방송 하이라이트 */}
-                {(() => {
-                  const topStream = filteredStreams.filter(s=>s.is_live)[0] || filteredStreams[0]
-                  if (!topStream) return null
-                  return (
-                    <div className="mb-6 rounded-2xl overflow-hidden border border-red-500/30 bg-gradient-to-r from-red-950/50 via-gray-900 to-gray-900 p-5">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-red-500 text-white">🔴 TOP 방송</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <a href={topStream.url} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-base hover:text-red-300 transition-colors line-clamp-1">{topStream.title}</a>
-                          <p className="text-gray-400 text-sm mt-1">{topStream.channel_name} · <span style={{color:PLATFORM_COLORS[topStream.platform]}}>{topStream.platform}</span></p>
-                        </div>
-                        <div className="flex-shrink-0 text-right">
-                          <p className="text-xs text-gray-500">{periodLabel} 수집</p>
-                          <p className="text-2xl font-bold text-red-400">{filteredStreams.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
-                          <p className="text-xs text-gray-500 mt-1">🔴 라이브 {filteredStreams.filter(s=>s.is_live).length}건</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-red-500/20 flex gap-4">
-                        {['자사','경쟁사','업계'].map(cat => (
-                          <button key={cat} onClick={() => handleStreamClick(cat)} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105" style={{backgroundColor:COLORS[cat]+'22', color:COLORS[cat], border:`1px solid ${COLORS[cat]}44`}}>
-                            {cat} <span className="font-bold">{filteredStreams.filter(s=>s.category===cat).length}건</span>
-                          </button>
-                        ))}
-                        <div className="ml-auto flex gap-3">
-                          {['유튜브','치지직','SOOP'].map(p => (
-                            <button key={p} onClick={() => handleStreamClick(undefined, p)} className="text-xs px-2 py-1 rounded-lg transition-all hover:scale-105" style={{backgroundColor:PLATFORM_COLORS[p]+'22', color:PLATFORM_COLORS[p]}}>
-                              {p} {filteredStreams.filter(s=>s.platform===p).length}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })()}
-
-                {/* 방송 시각화 섹션 */}
+                {/* 커뮤니티 시각화 - Row 3 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
-                  {/* 키워드 워드클라우드 */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  {/* 커뮤니티 워드클라우드 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">☁️ 방송 키워드</p>
+                      <p className="text-xs text-gray-500 font-medium">☁️ 커뮤니티 키워드</p>
                       <p className="text-xs text-gray-600">{periodLabel} 기준</p>
                     </div>
                     <WordCloud words={commKeywordFreq} onWordClick={(word: string) => { setSelectedCommKeyword(selectedCommKeyword === word ? '' : word); scrollToList() }} selectedWord={selectedCommKeyword} />
                   </div>
 
-                  {/* 인기 채널 TOP 5 - 탭 */}
+                  {/* 7일간 자사 키워드별 추이 */}
                   <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">🏆 인기 채널 TOP 5</p>
-                      <div className="flex gap-1 bg-gray-700 p-0.5 rounded-lg">
-                        <button onClick={() => setChannelSort('count')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${channelSort==='count'?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>방송 횟수</button>
-                        <button onClick={() => setChannelSort('viewers')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${channelSort==='viewers'?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>시청자 수</button>
-                      </div>
-                    </div>
-                    <div className="space-y-2.5">
-                      {(channelSort==='count' ? topChannelsByCount : topChannelsByViewers).map((ch, i) => (
-                        <div key={ch.name} className="flex items-center gap-3">
-                          <span className={`text-xs font-bold w-5 text-center ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white text-xs font-medium truncate">{ch.name}</p>
-                            <p className="text-xs" style={{color:PLATFORM_COLORS[ch.platform]}}>{ch.platform}</p>
-                          </div>
-                          <div className="text-right">
-                            {channelSort==='count'
-                              ? <p className="text-xs text-gray-300 font-medium">{ch.count}건</p>
-                              : <p className="text-xs text-blue-400 font-medium">{ch.viewers.toLocaleString()}명</p>
-                            }
-                            {ch.live > 0 && <p className="text-xs text-red-400">🔴 LIVE</p>}
-                          </div>
-                        </div>
-                      ))}
-                      {(channelSort==='viewers' && topChannelsByViewers.length === 0) && (
-                        <p className="text-xs text-gray-600 text-center py-4">시청자 수 데이터 수집 중...</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 신규 채널 */}
-                  <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <p className="text-xs text-gray-500 font-medium mb-3">✨ 신규 채널</p>
-                    <p className="text-4xl font-bold text-emerald-400 mb-1">{newChannels.length}<span className="text-lg text-gray-500 font-normal ml-1">개</span></p>
-                    <p className="text-xs text-gray-600 mb-4">{periodLabel} 기간 첫 등장</p>
-                    <div className="space-y-1.5">
-                      {newChannels.slice(0,4).map(ch => (
-                        <div key={ch} className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                          <span className="text-xs text-gray-400 truncate">{ch}</span>
-                        </div>
-                      ))}
-                      {newChannels.length > 4 && <p className="text-xs text-gray-600">+{newChannels.length-4}개 더</p>}
-                    </div>
-                  </div>
-
-                  {/* 7일간 플랫폼별 추이 */}
-                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">📈 7일간 플랫폼별 추이</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                      <p className="text-xs text-gray-500 font-medium">📈 자사 키워드별 7일 추이</p>
                     </div>
                     <ResponsiveContainer width="100%" height={160}>
-                      <AreaChart data={Array.from({length:7},(_,i)=>{
-                        const d=new Date(); d.setDate(d.getDate()-(6-i))
-                        const ds=d.toISOString().split('T')[0]
-                        return {
-                          date:`${d.getMonth()+1}/${d.getDate()}`,
-                          유튜브: streams.filter(s=>s.platform==='유튜브'&&(s.started_at||'').startsWith(ds)).length,
-                          치지직: streams.filter(s=>s.platform==='치지직'&&(s.started_at||'').startsWith(ds)).length,
-                        }
-                      })}>
-                        <defs>
-                          <linearGradient id="gradYT" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
-                          <linearGradient id="gradCZ" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
-                        </defs>
+                      <LineChart data={commKeyword7d}>
                         <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:10}} axisLine={false} tickLine={false}/>
                         <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
-                        <Area type="monotone" dataKey="유튜브" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradYT)"/>
-                        <Area type="monotone" dataKey="치지직" stroke="#6366f1" strokeWidth={1.5} fill="url(#gradCZ)"/>
-                      </AreaChart>
+                        <Line type="monotone" dataKey="드림에이지" stroke="#6366f1" strokeWidth={2} dot={false}/>
+                        <Line type="monotone" dataKey="알케론" stroke="#10b981" strokeWidth={2} dot={false}/>
+                        <Line type="monotone" dataKey="아키텍트" stroke="#f59e0b" strokeWidth={2} dot={false}/>
+                      </LineChart>
                     </ResponsiveContainer>
                     <div className="flex gap-4 mt-2">
-                      {['유튜브','치지직'].map(p=><div key={p} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:PLATFORM_COLORS[p]}}></div><span className="text-xs text-gray-500">{p}</span></div>)}
+                      {[['드림에이지','#6366f1'],['알케론','#10b981'],['아키텍트','#f59e0b']].map(([k,col])=>(
+                        <div key={k} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor:col}}></div><span className="text-xs text-gray-500">{k}</span></div>
+                      ))}
                     </div>
                   </div>
 
-                  {/* 카테고리별 라이브 vs VOD */}
-                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs text-gray-500 font-medium">📊 카테고리별 라이브 vs VOD</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
-                    </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={['자사','경쟁사','업계'].map(cat=>({
-                        name: cat,
-                        라이브: filteredStreams.filter(s=>s.category===cat&&s.is_live).length,
-                        VOD: filteredStreams.filter(s=>s.category===cat&&!s.is_live).length,
-                      }))} onClick={(d:any)=>{if(d?.activeLabel)handleStreamClick(d.activeLabel)}}>
-                        <XAxis dataKey="name" tick={{fill:'#9ca3af',fontSize:11}} axisLine={false} tickLine={false}/>
-                        <YAxis hide/>
-                        <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'none',borderRadius:'8px',fontSize:'11px'}}/>
-                        <Bar dataKey="라이브" stackId="a" fill="#ef4444" radius={[0,0,0,0]}/>
-                        <Bar dataKey="VOD" stackId="a" fill="#6366f1" radius={[4,4,0,0]}/>
-                        <Legend wrapperStyle={{fontSize:'11px'}}/>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* 시간대별 방송량 히트맵 */}
+                  {/* 자사 키워드별 상세 탭 */}
                   <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs text-gray-500 font-medium">⏰ 시간대별 방송량</p>
-                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex gap-1 bg-gray-700 p-0.5 rounded-lg">
+                        {['드림에이지','알케론','아키텍트'].map(kw=>(
+                          <button key={kw} onClick={()=>setCommKwDetailTab(kw)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${commKwDetailTab===kw?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>{kw}</button>
+                        ))}
+                      </div>
                     </div>
                     {(() => {
-                      const hourly = Array.from({length:24},(_,h)=>({
-                        h, count: filteredStreams.filter(s=>{
-                          const d=s.started_at; return d&&new Date(d).getHours()===h
-                        }).length
-                      }))
-                      const max = Math.max(...hourly.map(x=>x.count),1)
-                      const peak = hourly.reduce((a,b)=>a.count>b.count?a:b)
+                      const kwMap: Record<string,string[]> = {'드림에이지':['드림에이지'],'알케론':['알케론','arkheron','Arkheron'],'아키텍트':['아키텍트']}
+                      const kwPosts = dateFilteredKeywordPosts.filter(p => kwMap[commKwDetailTab]?.some(kw=>p.keyword===kw))
+                      const pos = kwPosts.filter(p=>p.sentiment==='긍정').length
+                      const neg = kwPosts.filter(p=>p.sentiment==='부정').length
+                      const neu = kwPosts.filter(p=>p.sentiment==='중립').length
+                      const total = kwPosts.length || 1
+                      const commDist = Object.keys(COMMUNITY_COLORS).map(c=>({name:c,cnt:kwPosts.filter(p=>p.community===c).length})).filter(x=>x.cnt>0).sort((a,b)=>b.cnt-a.cnt)
                       return (
                         <>
-                          <div className="grid grid-cols-6 gap-1 mb-2">
-                            {hourly.map(h=>{
-                              const intensity=h.count/max
-                              return (
-                                <div key={h.h} className="flex flex-col items-center gap-1">
-                                  <div className="w-full h-8 rounded" style={{backgroundColor:intensity>0?`rgba(239,68,68,${0.15+intensity*0.85})`:'#1f2937'}} title={`${h.h}시 ${h.count}건`}></div>
-                                  {h.h%4===0&&<span className="text-xs text-gray-600">{h.h}</span>}
-                                </div>
-                              )
-                            })}
+                          <div className="flex items-center gap-2 mb-3">
+                            <p className="text-2xl font-bold text-white">{kwPosts.length}</p>
+                            <p className="text-xs text-gray-500">건 언급</p>
                           </div>
-                          <div className="mt-2 text-center">
-                            <span className="text-xs text-gray-500">피크: {peak.h}시 ({peak.count}건)</span>
+                          {[['긍정',pos,'#10b981'],['부정',neg,'#ef4444'],['중립',neu,'#6b7280']].map(([label,val,col])=>(
+                            <div key={label} className="mb-1.5">
+                              <div className="flex justify-between text-xs mb-0.5">
+                                <span style={{color:col as string}}>{label}</span>
+                                <span className="text-gray-500">{val}건 ({Math.round((val as number)/total*100)}%)</span>
+                              </div>
+                              <div className="h-1.5 bg-gray-700 rounded-full">
+                                <div className="h-1.5 rounded-full" style={{width:`${(val as number)/total*100}%`,backgroundColor:col as string}}></div>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="mt-3 space-y-1">
+                            {commDist.slice(0,3).map(({name,cnt})=>(
+                              <div key={name} className="flex items-center gap-2 text-xs">
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{backgroundColor:COMMUNITY_COLORS[name]||'#6b7280'}}></span>
+                                <span className="text-gray-400 flex-1">{name}</span>
+                                <span className="text-gray-500">{cnt}건</span>
+                              </div>
+                            ))}
                           </div>
                         </>
                       )
                     })()}
+                  </div>
+
+                  {/* 최고 반응 게시물 TOP5 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">🔥 최고 반응 게시물</p>
+                      <p className="text-xs text-gray-600">조회+댓글 기준</p>
+                    </div>
+                    {topCommPosts.length === 0
+                      ? <p className="text-xs text-gray-600 text-center py-8">반응 데이터 없음</p>
+                      : <div className="space-y-2.5">
+                          {topCommPosts.map((p,i)=>(
+                            <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" className="block hover:bg-gray-700/40 rounded-lg p-2 transition-colors">
+                              <div className="flex items-start gap-2">
+                                <span className={`text-xs font-bold w-4 flex-shrink-0 mt-0.5 ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white text-xs font-medium line-clamp-1">{p.title}</p>
+                                  <div className="flex gap-2 mt-0.5">
+                                    <span className="text-xs" style={{color:SENTIMENT_COLORS[p.sentiment]}}>{p.sentiment}</span>
+                                    <span className="text-xs text-gray-600">{p.community}</span>
+                                    {p.views>0&&<span className="text-xs text-gray-600">👀{p.views.toLocaleString()}</span>}
+                                    {p.comments>0&&<span className="text-xs text-gray-600">💬{p.comments}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                    }
                   </div>
                 </div>
 
