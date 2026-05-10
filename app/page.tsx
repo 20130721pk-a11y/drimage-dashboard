@@ -161,7 +161,6 @@ export default function Home() {
   const [commKwDetailTab, setCommKwDetailTab] = useState<string>('드림에이지')
   const [commSubKeyword, setCommSubKeyword] = useState<string>('전체')
   const [commCategoryFilter, setCommCategoryFilter] = useState<string>('전체')
-  const [commGenderFilter, setCommGenderFilter] = useState<string>('전체')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -273,10 +272,9 @@ export default function Home() {
     const matchCommKw = !selectedCommKeyword || p.title?.includes(selectedCommKeyword) || p.content?.includes(selectedCommKeyword)
     const meta = COMMUNITY_META[p.community] || { category: '', gender: '', age: '' }
     const matchCategory = commCategoryFilter === '전체' || meta.category === commCategoryFilter
-    const matchGender = commGenderFilter === '전체' || meta.gender === commGenderFilter
     const dateVal = p.posted_at || p.collected_at || ''
-    return matchSentiment && matchCommunity && matchSearch && matchCommKw && matchCategory && matchGender && dateVal >= df && dateVal <= dt
-  }), [keywordPosts, commSentiment, commCommunity, commSearch, df, dt, selectedCommKeyword])
+    return matchSentiment && matchCommunity && matchSearch && matchCommKw && matchCategory && dateVal >= df && dateVal <= dt
+  }), [keywordPosts, commSentiment, commCommunity, commSearch, df, dt, selectedCommKeyword, commCategoryFilter])
 
   // 뉴스 통계 - 모두 filteredNews 기준으로 통일
   const yestFrom = yesterday + 'T00:00:00'
@@ -443,18 +441,14 @@ export default function Home() {
     const dv = p.posted_at || p.collected_at || ''
     return dv >= df && dv <= dt
   })
-  const sentimentCount = ['긍정', '부정', '중립'].map(s => ({ name: s, value: dateFilteredKeywordPosts.filter(p => p.sentiment === s).length }))
-  const commCount = Object.keys(COMMUNITY_COLORS).map(c => ({ name: c, value: dateFilteredKeywordPosts.filter(p => p.community === c).length })).filter(c => c.value > 0)
-  const vsData = Object.entries(COMM_KEYWORDS).map(([label, kws]) => {
-    const kp = posts.filter(p => kws.some(kw => p.keyword === kw || p.title?.includes(kw)))
-    return { name: label === '자사' ? '알케론' : '경쟁작', 긍정: kp.filter(p => p.sentiment === '긍정').length, 부정: kp.filter(p => p.sentiment === '부정').length, 중립: kp.filter(p => p.sentiment === '중립').length }
+  // 카테고리 필터까지 적용된 기준 (감성/채널/검색 제외)
+  const categoryFilteredPosts = commCategoryFilter === '전체' ? dateFilteredKeywordPosts : dateFilteredKeywordPosts.filter(p => {
+    const meta = COMMUNITY_META[p.community] || { category: '', gender: '', age: '' }
+    return meta.category === commCategoryFilter
   })
-  const comm7d = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (6 - i))
-    const ds = d.toISOString().split('T')[0]
-    const dp = keywordPosts.filter(p => (p.collected_at||'').startsWith(ds))
-    return { date: `${d.getMonth()+1}/${d.getDate()}`, 긍정: dp.filter(p => p.sentiment==='긍정').length, 부정: dp.filter(p => p.sentiment==='부정').length, 중립: dp.filter(p => p.sentiment==='중립').length }
-  })
+  const sentimentCount = ['긍정', '부정', '중립'].map(s => ({ name: s, value: categoryFilteredPosts.filter(p => p.sentiment === s).length }))
+  const commCount = Object.keys(COMMUNITY_COLORS).map(c => ({ name: c, value: categoryFilteredPosts.filter(p => p.community === c).length })).filter(c => c.value > 0)
+
 
   // 방송 시간대별 데이터 (KST 기준)
   const streamHourlyData = useMemo(() => Array.from({length: 24}, (_, h) => ({
@@ -571,7 +565,7 @@ export default function Home() {
   const commComp7d = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byKw = (kw: string) => posts.filter(p => p.keyword===kw && (p.collected_at||'').startsWith(ds)).length
+    const byKw = (kw: string) => posts.filter(p => p.keyword===kw && (p.posted_at||p.collected_at||'').startsWith(ds)).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       포트나이트: byKw('포트나이트'),
@@ -586,7 +580,7 @@ export default function Home() {
   const commKeyword7d = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && (p.collected_at||'').startsWith(ds)).length
+    const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && (p.posted_at||p.collected_at||'').startsWith(ds)).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       드림에이지: byKw(['드림에이지']),
@@ -597,11 +591,11 @@ export default function Home() {
 
   // 최고 반응 게시물 TOP5
   const topCommPosts = useMemo(() =>
-    [...dateFilteredKeywordPosts]
+    [...categoryFilteredPosts]
       .filter(p => (p.views||0) > 0 || (p.comments||0) > 0)
       .sort((a,b) => ((b.views||0)+(b.comments||0)*5) - ((a.views||0)+(a.comments||0)*5))
       .slice(0, 5),
-    [dateFilteredKeywordPosts]
+    [categoryFilteredPosts]
   )
 
   // 커뮤니티 요일별 패턴
@@ -618,19 +612,19 @@ export default function Home() {
   // 커뮤니티 시간대별 게시물량
   const commHourlyData = useMemo(() => Array.from({length:24}, (_, h) => ({
     hour: `${h}시`, h,
-    count: dateFilteredKeywordPosts.filter(p => {
+    count: categoryFilteredPosts.filter(p => {
       const d = p.posted_at || p.collected_at
       if (!d) return false
       const kstHour = (new Date(d).getUTCHours()+9)%24
       return kstHour === h
     }).length
-  })), [dateFilteredKeywordPosts])
+  })), [categoryFilteredPosts])
 
   // 커뮤니티 7일간 카테고리별 추이
   const comm7dByCat = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byComm = (comms: string[]) => posts.filter(p => comms.includes(p.community) && (p.collected_at||'').startsWith(ds)).length
+    const byComm = (comms: string[]) => keywordPosts.filter(p => comms.includes(p.community) && (p.posted_at||p.collected_at||'').startsWith(ds)).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       웹진: byComm(['인벤','루리웹']),
@@ -639,8 +633,8 @@ export default function Home() {
     }
   }), [posts])
 
-  const posRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[0].value / dateFilteredKeywordPosts.length * 100) : 0
-  const negRate = dateFilteredKeywordPosts.length > 0 ? Math.round(sentimentCount[1].value / dateFilteredKeywordPosts.length * 100) : 0
+  const posRate = categoryFilteredPosts.length > 0 ? Math.round(sentimentCount[0].value / categoryFilteredPosts.length * 100) : 0
+  const negRate = categoryFilteredPosts.length > 0 ? Math.round(sentimentCount[1].value / categoryFilteredPosts.length * 100) : 0
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
@@ -1640,7 +1634,7 @@ export default function Home() {
                   <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <p className="text-xs text-gray-500 mb-3">💬 총 언급</p>
                     <p className="text-5xl font-bold text-white">{dateFilteredKeywordPosts.length}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
-                    <p className="text-xs text-gray-600 mt-2">오늘 {keywordPosts.filter(p=>(p.collected_at||'').startsWith(today)).length}건</p>
+                    <p className="text-xs text-gray-600 mt-2">오늘 {keywordPosts.filter(p=>(p.posted_at||p.collected_at||'').startsWith(today)).length}건</p>
                   </div>
 
                   {/* 감성 카드 3개 */}
@@ -1833,9 +1827,9 @@ export default function Home() {
                     <div className="mt-3 pt-2 border-t border-gray-700">
                       <p className="text-xs text-gray-600 mb-1.5">커뮤니티별 비중</p>
                       <div className="space-y-1">
-                        {Object.entries(COMMUNITY_COLORS).filter(([name])=>dateFilteredKeywordPosts.some(p=>p.community===name)).map(([name,color])=>{
-                          const cnt = dateFilteredKeywordPosts.filter(p=>p.community===name).length
-                          const total = dateFilteredKeywordPosts.length||1
+                        {Object.entries(COMMUNITY_COLORS).filter(([name])=>categoryFilteredPosts.some(p=>p.community===name)).map(([name,color])=>{
+                          const cnt = categoryFilteredPosts.filter(p=>p.community===name).length
+                          const total = categoryFilteredPosts.length||1
                           return (
                             <div key={name} className="flex items-center gap-2">
                               <span className="text-xs w-14 truncate flex-shrink-0" style={{color}}>{name}</span>
