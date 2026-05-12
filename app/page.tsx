@@ -59,7 +59,7 @@ const GENDER_COLORS: Record<string, string> = {
 
 const SOURCE_MAP: Record<string, string> = { '구글 뉴스': 'Google News', '네이버 뉴스': '네이버 -', '네이버 블로그': '네이버블로그' }
 const COMM_KEYWORDS: Record<string, string[]> = {
-  '자사': ['드림에이지', '알케론', 'arkheron', 'Arkheron', '아키텍트'],
+  '자사': ['드림에이지', '알케론', 'arkheron', 'Arkheron', '아키텍트', '드림에이지 아키텍트'],
   '경쟁사': ['포트나이트', '이터널리턴', '배틀그라운드', '발로란트', '리그오브레전드', '오버워치2', '에이펙스 레전드'],
 }
 
@@ -256,7 +256,7 @@ export default function Home() {
   const COMM_SUB_KEYWORDS: Record<string,string[]> = {
     '드림에이지': ['드림에이지'],
     '알케론': ['알케론','arkheron','Arkheron'],
-    '아키텍트': ['아키텍트'],
+    '아키텍트': ['아키텍트', '드림에이지 아키텍트'],
     '포트나이트': ['포트나이트'], '이터널리턴': ['이터널리턴'],
     '배틀그라운드': ['배틀그라운드'], '발로란트': ['발로란트'],
     '리그오브레전드': ['리그오브레전드'], '오버워치2': ['오버워치2'], '에이펙스 레전드': ['에이펙스 레전드'],
