@@ -128,7 +128,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [dateMode, setDateMode] = useState<'single' | 'range'>('single')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [rangeFrom, setRangeFrom] = useState(new Date().toISOString().split('T')[0])
+  const [rangeFrom, setRangeFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate()-30); return d.toISOString().split('T')[0] })
   const [rangeTo, setRangeTo] = useState(new Date().toISOString().split('T')[0])
   const [category, setCategory] = useState('전체')
   const [segment, setSegment] = useState('')
@@ -433,7 +433,7 @@ export default function Home() {
     live: streams.filter(s => s.platform === p && s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length,
     vod: streams.filter(s => s.platform === p && !s.is_live && (s.started_at||'') >= df && (s.started_at||'') <= dt).length,
   }))
-  const liveCount = streams.filter(s => s.is_live).length
+  const liveCount = streamPlatCount.reduce((sum, p) => sum + p.live, 0)
   const streamCatCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat && (s.started_at||'') >= df && (s.started_at||'') <= dt).length }))
 
   // 커뮤니티 통계
