@@ -1845,38 +1845,123 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 커뮤니티 시각화 - Row 3 */}
+                {/* 커뮤니티 인사이트 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
-                  {/* 최고 반응 게시물 TOP5 */}
-                  <div className="col-span-6 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+
+                  {/* ① 이슈 레이더 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-gray-500 font-medium">🔥 최고 반응 게시물</p>
-                      <p className="text-xs text-gray-600">조회+댓글 기준</p>
+                      <p className="text-xs text-gray-500 font-medium">🚨 이슈 레이더</p>
+                      <p className="text-xs text-gray-600">부정 급상승 키워드</p>
                     </div>
-                    {topCommPosts.length === 0
-                      ? <p className="text-xs text-gray-600 text-center py-8">반응 데이터 없음</p>
-                      : <div className="space-y-2.5">
-                          {topCommPosts.map((p,i)=>(
-                            <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" className="block hover:bg-gray-700/40 rounded-lg p-2 transition-colors">
-                              <div className="flex items-start gap-2">
-                                <span className={`text-xs font-bold w-4 flex-shrink-0 mt-0.5 ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-amber-600':'text-gray-600'}`}>{i+1}</span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-white text-xs font-medium line-clamp-1">{p.title}</p>
-                                  <div className="flex gap-2 mt-0.5">
-                                    <span className="text-xs" style={{color:SENTIMENT_COLORS[p.sentiment]}}>{p.sentiment}</span>
-                                    <span className="text-xs text-gray-600">{p.community}</span>
-                                    {p.views>0&&<span className="text-xs text-gray-600">👀{p.views.toLocaleString()}</span>}
-                                    {p.comments>0&&<span className="text-xs text-gray-600">💬{p.comments}</span>}
-                                  </div>
-                                </div>
-                              </div>
-                            </a>
+                    {(() => {
+                      const todayNeg = dateFilteredKeywordPosts.filter(p => p.sentiment === "부정")
+                      const yestNeg = keywordPosts.filter(p => {
+                        const dv = p.posted_at || p.collected_at || ""
+                        return p.sentiment === "부정" && dv >= yesterday + "T00:00:00" && dv <= yesterday + "T23:59:59"
+                      })
+                      const exFreq = (arr: typeof posts) => {
+                        const freq: Record<string,number> = {}
+                        arr.forEach(p => { (p.title||"").match(/[가-힣]{2,}/g)?.forEach(w => { freq[w]=(freq[w]||0)+1 }) })
+                        return freq
+                      }
+                      const tF = exFreq(todayNeg), yF = exFreq(yestNeg)
+                      const rising = Object.entries(tF).map(([kw,cnt])=>({kw,cnt,rise:cnt-(yF[kw]||0)})).filter(k=>k.rise>0).sort((a,b)=>b.rise-a.rise).slice(0,5)
+                      if (rising.length === 0) return <div className="flex flex-col items-center justify-center py-8"><p className="text-2xl mb-1">✅</p><p className="text-xs text-gray-500">급상승 이슈 없음</p></div>
+                      return <div className="space-y-2">{rising.map((k,i)=>(<div key={k.kw} className="flex items-center gap-2 p-2 rounded-lg bg-red-900/20 border border-red-500/20"><span className="text-xs text-red-400 font-bold w-3">{i+1}</span><span className="text-xs text-white flex-1 truncate">{k.kw}</span><span className="text-xs font-bold text-red-400">▲{k.rise}</span><span className="text-xs text-gray-500">{k.cnt}건</span></div>))}</div>
+                    })()}
+                  </div>
+
+                  {/* ② 자사 vs 경쟁사 감성 비교 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">⚔️ 자사 vs 경쟁사</p>
+                      <p className="text-xs text-gray-600">감성 비교</p>
+                    </div>
+                    {(["자사","경쟁사"] as const).map(label => {
+                      const arr = posts.filter(p => { const dv=p.posted_at||p.collected_at||""; return COMM_KEYWORDS[label].some(kw=>p.keyword===kw)&&dv>=df&&dv<=dt })
+                      const total = arr.length || 1
+                      const pos = arr.filter(p=>p.sentiment==="긍정").length
+                      const neg = arr.filter(p=>p.sentiment==="부정").length
+                      const neu = total - pos - neg
+                      const color = label==="자사" ? "#6366f1" : "#ef4444"
+                      return (
+                        <div key={label} className="mb-4 last:mb-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{backgroundColor:color}}></div><span className="text-xs font-medium text-white">{label}</span></div>
+                            <div className="flex items-center gap-1.5"><span className="text-xs font-bold text-green-400">{Math.round(pos/total*100)}% 긍정</span><span className="text-xs text-gray-600">{arr.length}건</span></div>
+                          </div>
+                          {([["긍정",pos,"#10b981"],["부정",neg,"#ef4444"],["중립",neu,"#6b7280"]] as [string,number,string][]).map(([s,v,c])=>(
+                            <div key={s} className="flex items-center gap-2 mb-1">
+                              <span className="text-xs w-6 flex-shrink-0" style={{color:c}}>{s}</span>
+                              <div className="flex-1 h-1.5 bg-gray-700 rounded-full"><div className="h-1.5 rounded-full" style={{width:Math.round(v/total*100)+"%",backgroundColor:c}}></div></div>
+                              <span className="text-xs text-gray-500 w-7 text-right">{Math.round(v/total*100)}%</span>
+                            </div>
                           ))}
                         </div>
-                    }
+                      )
+                    })}
                   </div>
-                </div>
 
+                  {/* ③ 커뮤니티 토픽 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">💬 커뮤니티 토픽</p>
+                      <p className="text-xs text-gray-600">{periodLabel} 기준</p>
+                    </div>
+                    <div className="space-y-2.5">
+                      {Object.keys(COMMUNITY_COLORS).map(comm => {
+                        const cp = dateFilteredKeywordPosts.filter(p=>p.community===comm)
+                        const stops = ["드림에이지","알케론","arkheron","아키텍트","포트나이트","배틀그라운드","발로란트","이터널리턴","리그오브레전드","오버워치","에이펙스","게임","방송","fortnite","valorant","pubg"]
+                        const freq: Record<string,number> = {}
+                        cp.forEach(p => { (p.title||"").match(/[가-힣]{2,}/g)?.forEach(w => { if(!stops.some(s=>w.includes(s))) freq[w]=(freq[w]||0)+1 }) })
+                        const top2 = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,2)
+                        const col = COMMUNITY_COLORS[comm]||"#6b7280"
+                        return (
+                          <div key={comm} className="flex items-start gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{backgroundColor:col}}></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1"><span className="text-xs font-medium" style={{color:col}}>{comm}</span><span className="text-xs text-gray-600">({cp.length})</span></div>
+                              <div className="flex gap-1 flex-wrap mt-0.5">
+                                {top2.length===0 ? <span className="text-xs text-gray-600">-</span> : top2.map(([w,c])=>(<span key={w} className="text-xs px-1.5 py-0.5 rounded" style={{backgroundColor:col+"22",color:col}}>{w} {c}</span>))}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* ④ 화제성 분포 */}
+                  <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 font-medium">🔥 화제성 분포</p>
+                      <p className="text-xs text-gray-600">반응 게시물 기준</p>
+                    </div>
+                    {(() => {
+                      const viral = [...dateFilteredKeywordPosts].filter(p=>(p.views||0)>0||(p.comments||0)>0).sort((a,b)=>((b.views||0)+(b.comments||0)*5)-((a.views||0)+(a.comments||0)*5)).slice(0,4)
+                      const noReact = dateFilteredKeywordPosts.filter(p=>(p.views||0)===0&&(p.comments||0)===0).length
+                      return (
+                        <>
+                          <div className="flex gap-3 mb-3">
+                            <div className="flex-1 bg-orange-900/20 rounded-lg p-2.5 text-center"><p className="text-xl font-bold text-orange-400">{viral.length}</p><p className="text-xs text-gray-500">화제 게시물</p></div>
+                            <div className="flex-1 bg-gray-700/40 rounded-lg p-2.5 text-center"><p className="text-xl font-bold text-gray-400">{noReact}</p><p className="text-xs text-gray-500">반응 없음</p></div>
+                          </div>
+                          <div className="space-y-1.5">
+                            {viral.length===0 ? <p className="text-xs text-gray-600 text-center py-3">반응 데이터 없음</p> : viral.map((p,i)=>(
+                              <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-1.5 p-1.5 rounded-lg hover:bg-gray-700/40 transition-colors">
+                                <span className={"text-xs font-bold w-3 flex-shrink-0 "+(i===0?"text-yellow-400":i===1?"text-gray-300":"text-amber-700")}>{i+1}</span>
+                                <p className="text-xs text-white flex-1 line-clamp-1">{p.title}</p>
+                                {(p.views||0)>0&&<span className="text-xs text-gray-600 flex-shrink-0">👀{p.views}</span>}
+                              </a>
+                            ))}
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+
+                </div>
                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4" ref={listRef}>
                   {/* Row 1: 카테고리 */}
                   <div className="flex gap-2 mb-2">
