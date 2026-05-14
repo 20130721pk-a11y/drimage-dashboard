@@ -313,7 +313,7 @@ export default function Home() {
     cat
   })))
   const news7d = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (6 - i))
+    const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate() - (6 - i))
     const ds = d.toISOString().split('T')[0]
     return { date: `${d.getMonth()+1}/${d.getDate()}`, count: news.filter(n => (n.collected_at||'').startsWith(ds)).length }
   })
@@ -573,7 +573,7 @@ export default function Home() {
 
   // 경쟁사 키워드별 7일 추이
   const commComp7d = useMemo(() => Array.from({length:7}, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate()-(6-i))
+    const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
     const byKw = (kw: string) => posts.filter(p => p.keyword===kw && (p.posted_at||p.collected_at||'').startsWith(ds)).length
     return {
@@ -588,7 +588,7 @@ export default function Home() {
 
   // 자사 키워드별 7일 추이
   const commKeyword7d = useMemo(() => Array.from({length:7}, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate()-(6-i))
+    const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
     const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && (p.posted_at||p.collected_at||'').startsWith(ds)).length
     return {
@@ -632,7 +632,7 @@ export default function Home() {
 
   // 커뮤니티 7일간 카테고리별 추이
   const comm7dByCat = useMemo(() => Array.from({length:7}, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate()-(6-i))
+    const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
     const byComm = (comms: string[]) => keywordPosts.filter(p => comms.includes(p.community) && (p.posted_at||p.collected_at||'').startsWith(ds)).length
     return {
@@ -728,7 +728,7 @@ export default function Home() {
                     <ResponsiveContainer width="100%" height={120}>
                       <AreaChart data={(() => {
                         return Array.from({ length: 7 }, (_, i) => {
-                          const d = new Date(); d.setDate(d.getDate() - (6 - i))
+                          const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate() - (6 - i))
                           const ds = d.toISOString().split('T')[0]
                           return {
                             date: `${d.getMonth()+1}/${d.getDate()}`,
@@ -1071,7 +1071,7 @@ export default function Home() {
                     </div>
                     <ResponsiveContainer width="100%" height={160}>
                       <AreaChart data={Array.from({length:7},(_,i)=>{
-                        const d=new Date(); d.setDate(d.getDate()-(6-i))
+                        const d=new Date(Date.now()+9*60*60*1000); d.setDate(d.getDate()-(6-i))
                         const ds=d.toISOString().split('T')[0]
                         return {
                           date:`${d.getMonth()+1}/${d.getDate()}`,
