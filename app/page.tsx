@@ -116,8 +116,9 @@ function stripHtml(html: string) {
   return html?.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim() || ''
 }
 function getDateFilter(dateMode: string, selectedDate: string, rangeFrom: string, rangeTo: string) {
-  if (dateMode === 'single') return { from: selectedDate + 'T00:00:00', to: selectedDate + 'T23:59:59' }
-  return { from: rangeFrom + 'T00:00:00', to: rangeTo + 'T23:59:59' }
+  const toUTC = (d: string, t: string) => new Date(d + 'T' + t + '+09:00').toISOString().replace('.000Z', '')
+  if (dateMode === 'single') return { from: toUTC(selectedDate, '00:00:00'), to: toUTC(selectedDate, '23:59:59') }
+  return { from: toUTC(rangeFrom, '00:00:00'), to: toUTC(rangeTo, '23:59:59') }
 }
 
 function getKSTDate(offsetDays = 0) {
