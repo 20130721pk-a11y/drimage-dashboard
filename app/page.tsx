@@ -648,8 +648,8 @@ export default function Home() {
       {/* 헤더 */}
       <div className="border-b border-gray-800 px-8 py-4 flex items-center justify-between sticky top-0 bg-gray-950 z-10">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">업계 동향 모니터링</h1>
-          <p className="text-xs text-gray-500">DRIMAGE · 게임 업계 인텔리전스</p>
+          <h1 className="text-xl font-bold text-white tracking-tight">게임 업계 동향 모니터링_알케론 기준</h1>
+          <p className="text-xs text-gray-500">DRIMAGE_게임마케팅실</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
