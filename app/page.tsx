@@ -697,6 +697,25 @@ export default function Home() {
               <>
                 {/* 벤토 박스 Summary */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
+                  {/* 전체 카드 */}
+                  <button onClick={() => { setCategory('전체'); setSegment('') }} className={"col-span-2 bg-gray-800 rounded-2xl p-5 border transition-all text-left group " + (category==='전체'&&!segment ? "border-white" : "border-gray-700 hover:border-gray-500")}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs text-gray-500 font-medium">전체 뉴스</span>
+                      <span className={"text-xs font-bold px-2 py-0.5 rounded-full " + (category==='전체'&&!segment ? "bg-white text-gray-900" : "bg-gray-700 text-gray-400")}>ALL</span>
+                    </div>
+                    <p className="text-4xl font-bold mb-1 text-white">{newsCatCount.reduce((s,c)=>s+c.todayCnt,0)}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
+                    <p className="text-xs text-gray-600 mb-2">전체 누적 {news.length}건</p>
+                    <div className="space-y-1">
+                      {newsCatCount.map(c => (
+                        <div key={c.name} className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{backgroundColor:COLORS[c.name]}}></div>
+                          <span className="text-xs text-gray-400 flex-1">{c.name}</span>
+                          <span className="text-xs font-bold" style={{color:COLORS[c.name]}}>{c.todayCnt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </button>
+
                   {/* 카테고리 3개 카드 */}
                   {newsCatCount.map(c => (
                     <button key={c.name} onClick={() => handleNewsClick(c.name)} className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700 hover:border-gray-500 transition-all text-left group">
@@ -720,8 +739,8 @@ export default function Home() {
                     </button>
                   ))}
 
-                  {/* 7일 트렌드 - col-span-4로 확장 */}
-                  <div className="col-span-6 bg-gray-800 rounded-2xl p-5 border border-gray-700">
+                  {/* 7일 트렌드 */}
+                  <div className="col-span-4 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-gray-500 font-medium">📈 7일간 카테고리별 추이</p>
                     </div>
