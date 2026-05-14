@@ -134,9 +134,9 @@ export default function Home() {
   const [streams, setStreams] = useState<Stream[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
-  const [dateMode, setDateMode] = useState<'single' | 'range'>('single')
+  const [dateMode, setDateMode] = useState<'single' | 'range'>('range')
   const [selectedDate, setSelectedDate] = useState(getKSTDate())
-  const [rangeFrom, setRangeFrom] = useState(() => getKSTDate(-30))
+  const [rangeFrom, setRangeFrom] = useState(() => getKSTDate(-7))
   const [rangeTo, setRangeTo] = useState(getKSTDate())
   const [category, setCategory] = useState('전체')
   const [segment, setSegment] = useState('')
@@ -176,6 +176,7 @@ export default function Home() {
   // 날짜 변경 시 또는 초기 로딩 완료 시 키워드 재조회
   useEffect(() => { fetchKeywords(df, dt) }, [dateMode, selectedDate, rangeFrom, rangeTo]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!loading) fetchKeywords(df, dt) }, [loading]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (activeTab === 'streams') { setDateMode('single'); setSelectedDate(getKSTDate()) } else { setDateMode('range'); setRangeFrom(getKSTDate(-7)); setRangeTo(getKSTDate()) } }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchAll() {
     setLoading(true)
