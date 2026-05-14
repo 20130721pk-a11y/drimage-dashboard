@@ -181,7 +181,7 @@ export default function Home() {
   async function fetchAll() {
     setLoading(true)
     const [{ data: n }, { data: s }, { data: p }] = await Promise.all([
-      supabase.from('news').select('*').order('published_at', { ascending: false }).limit(1000),
+      supabase.from('news').select('*').gte('published_at', new Date(Date.now()-30*24*60*60*1000).toISOString()).order('published_at', { ascending: false }).limit(3000),
       supabase.from('streams').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(2000),
       supabase.from('community_posts').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(5000),
     ])
