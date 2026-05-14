@@ -289,7 +289,8 @@ export default function Home() {
   const yestFrom = yesterday + 'T00:00:00'
   const yestTo = yesterday + 'T23:59:59'
   const newsCatCount = ['자사', '경쟁사', '업계'].map(cat => {
-    const periodCnt = filteredNews.filter(n => n.category === cat).length
+    const catDateNews = news.filter(n => { const dv = n.published_at || n.collected_at || ''; return n.category === cat && dv >= df && dv <= dt })
+    const periodCnt = catDateNews.length
     const yestCnt = news.filter(n => {
       if (n.category !== cat) return false
       const dv = n.published_at || n.collected_at || ''
@@ -302,7 +303,7 @@ export default function Home() {
       diff: periodCnt - yestCnt,
       segments: SEGMENTS[cat].map(seg => ({
         name: seg,
-        value: filteredNews.filter(n => n.category === cat && (n.tags?.includes(seg) || n.title?.includes(seg))).length
+        value: catDateNews.filter(n => n.tags?.includes(seg) || n.title?.includes(seg)).length
       }))
     }
   })
@@ -707,14 +708,13 @@ export default function Home() {
                       </div>
                       <p className="text-4xl font-bold mb-1 group-hover:opacity-80" style={{ color: COLORS[c.name] }}>{c.todayCnt}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
                       <p className="text-xs text-gray-600">전체 누적 {c.total}건</p>
-                      <div className="mt-3 space-y-1">
-                        {c.segments.slice(0,3).map(seg => (
-                          <div key={seg.name} className="flex items-center gap-2">
-                            <div className="h-1 rounded-full flex-1 bg-gray-700">
-                              <div className="h-1 rounded-full" style={{ width: `${c.total > 0 ? (seg.value/c.todayCnt*100) : 0}%`, backgroundColor: COLORS[seg.name] || COLORS[c.name] }}></div>
-                            </div>
-                            <span className="text-xs text-gray-500 w-16 text-right truncate">{seg.name} {seg.value}</span>
-                          </div>
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {c.segments.map(seg => (
+                          <button key={seg.name} onClick={(e) => { e.stopPropagation(); handleNewsClick(c.name, seg.name) }}
+                            className={"text-xs px-2 py-0.5 rounded-full transition-all hover:scale-105 " + (segment === seg.name ? "ring-1 ring-white" : "")}
+                            style={{ backgroundColor: (COLORS[seg.name]||COLORS[c.name])+"33", color: COLORS[seg.name]||COLORS[c.name], border: "1px solid " + (COLORS[seg.name]||COLORS[c.name]) + "44" }}>
+                            {seg.name} {seg.value}
+                          </button>
                         ))}
                       </div>
                     </button>
