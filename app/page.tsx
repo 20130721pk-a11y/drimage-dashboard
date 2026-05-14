@@ -120,6 +120,13 @@ function getDateFilter(dateMode: string, selectedDate: string, rangeFrom: string
   return { from: rangeFrom + 'T00:00:00', to: rangeTo + 'T23:59:59' }
 }
 
+function getKSTDate(offsetDays = 0) {
+  const now = new Date()
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  if (offsetDays) kst.setDate(kst.getDate() + offsetDays)
+  return kst.toISOString().split('T')[0]
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'news' | 'streams' | 'community'>('news')
   const [news, setNews] = useState<News[]>([])
@@ -127,9 +134,9 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [dateMode, setDateMode] = useState<'single' | 'range'>('single')
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [rangeFrom, setRangeFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate()-30); return d.toISOString().split('T')[0] })
-  const [rangeTo, setRangeTo] = useState(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState(getKSTDate())
+  const [rangeFrom, setRangeFrom] = useState(() => getKSTDate(-30))
+  const [rangeTo, setRangeTo] = useState(getKSTDate())
   const [category, setCategory] = useState('전체')
   const [segment, setSegment] = useState('')
   const [search, setSearch] = useState('')
@@ -662,9 +669,8 @@ export default function Home() {
               const days = [0, 3, 7][i]
               return (
                 <button key={label} onClick={() => {
-                  const t = new Date().toISOString().split('T')[0]
-                  const d = new Date(); d.setDate(d.getDate() - days)
-                  const ds = d.toISOString().split('T')[0]
+                  const t = getKSTDate()
+                  const ds = getKSTDate(-days)
                   if (days === 0) { setDateMode('single'); setSelectedDate(t) }
                   else { setDateMode('range'); setRangeFrom(ds); setRangeTo(t) }
                 }} className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors">{label}</button>
