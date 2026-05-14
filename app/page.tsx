@@ -315,7 +315,7 @@ export default function Home() {
   const news7d = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate() - (6 - i))
     const ds = d.toISOString().split('T')[0]
-    return { date: `${d.getMonth()+1}/${d.getDate()}`, count: news.filter(n => (n.collected_at||'').startsWith(ds)).length }
+    return { date: `${d.getMonth()+1}/${d.getDate()}`, count: news.filter(n => (n.published_at||n.collected_at||'').startsWith(ds)).length }
   })
 
   // 키워드 빈도 분석 - filteredNews 기준 (소스명/커뮤니티명 제외)
@@ -751,9 +751,9 @@ export default function Home() {
                           const ds = d.toISOString().split('T')[0]
                           return {
                             date: `${d.getMonth()+1}/${d.getDate()}`,
-                            자사: news.filter(n => n.category==='자사' && (n.collected_at||'').startsWith(ds)).length,
-                            경쟁사: news.filter(n => n.category==='경쟁사' && (n.collected_at||'').startsWith(ds)).length,
-                            업계: news.filter(n => n.category==='업계' && (n.collected_at||'').startsWith(ds)).length,
+                            자사: news.filter(n => n.category==='자사' && (n.published_at||n.collected_at||'').startsWith(ds)).length,
+                            경쟁사: news.filter(n => n.category==='경쟁사' && (n.published_at||n.collected_at||'').startsWith(ds)).length,
+                            업계: news.filter(n => n.category==='업계' && (n.published_at||n.collected_at||'').startsWith(ds)).length,
                           }
                         })
                       })()}>
