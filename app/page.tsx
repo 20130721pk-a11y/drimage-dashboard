@@ -257,7 +257,7 @@ export default function Home() {
       (s.title||'').toLowerCase().includes(alias.toLowerCase())
     )
     const matchStreamKw = !selectedStreamKeyword || s.tags?.includes(selectedStreamKeyword) || s.title?.includes(selectedStreamKeyword)
-    const dateVal = s.collected_at || s.started_at || ''
+    const dateVal = s.platform === '유튜브' ? (s.collected_at || s.started_at || '') : (s.started_at || s.collected_at || '')
     const matchDate = dateVal >= df && dateVal <= dt
     return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate && matchStreamKw
   }), [streams, streamCategory, streamPlatform, streamSearch, streamType, streamSegment, df, dt, selectedStreamKeyword])
