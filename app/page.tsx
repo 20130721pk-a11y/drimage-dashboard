@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 
 type NewsKeyword = { keyword: string; category: string; count: number }
 type News = { id: string; title: string; summary: string; url: string; source: string; category: string; tags: string[]; published_at: string; collected_at: string }
-type Stream = { id: string; title: string; channel_name: string; platform: string; url: string; thumbnail: string; category: string; tags: string[]; is_live: boolean; started_at: string; viewer_count: number }
+type Stream = { id: string; title: string; channel_name: string; platform: string; url: string; thumbnail: string; category: string; tags: string[]; is_live: boolean; started_at: string; viewer_count: number; collected_at: string }
 type Post = { id: string; title: string; content: string; url: string; community: string; views: number; comments: number; sentiment: string; sentiment_reason: string; keyword: string; posted_at: string; collected_at: string }
 
 const COLORS: Record<string, string> = {
@@ -173,7 +173,7 @@ export default function Home() {
     setLoading(true)
     const [{ data: n }, { data: s }, { data: p }] = await Promise.all([
       supabase.from('news').select('*').order('published_at', { ascending: false }).limit(1000),
-      supabase.from('streams').select('*').order('started_at', { ascending: false }).limit(500),
+      supabase.from('streams').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(2000),
       supabase.from('community_posts').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(5000),
     ])
     setNews(n || [])
@@ -248,7 +248,7 @@ export default function Home() {
       (s.title||'').toLowerCase().includes(alias.toLowerCase())
     )
     const matchStreamKw = !selectedStreamKeyword || s.tags?.includes(selectedStreamKeyword) || s.title?.includes(selectedStreamKeyword)
-    const dateVal = s.started_at || ''
+    const dateVal = s.collected_at || s.started_at || ''
     const matchDate = s.is_live || (dateVal >= df && dateVal <= dt)
     return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate && matchStreamKw
   }), [streams, streamCategory, streamPlatform, streamSearch, streamType, streamSegment, df, dt, selectedStreamKeyword])
