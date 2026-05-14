@@ -1868,7 +1868,7 @@ export default function Home() {
                       const tF = exFreq(todayNeg), yF = exFreq(yestNeg)
                       const rising = Object.entries(tF).map(([kw,cnt])=>({kw,cnt,rise:cnt-(yF[kw]||0)})).filter(k=>k.rise>0).sort((a,b)=>b.rise-a.rise).slice(0,5)
                       if (rising.length === 0) return <div className="flex flex-col items-center justify-center py-8"><p className="text-2xl mb-1">✅</p><p className="text-xs text-gray-500">급상승 이슈 없음</p></div>
-                      return <div className="space-y-2">{rising.map((k,i)=>(<div key={k.kw} className="flex items-center gap-2 p-2 rounded-lg bg-red-900/20 border border-red-500/20"><span className="text-xs text-red-400 font-bold w-3">{i+1}</span><span className="text-xs text-white flex-1 truncate">{k.kw}</span><span className="text-xs font-bold text-red-400">▲{k.rise}</span><span className="text-xs text-gray-500">{k.cnt}건</span></div>))}</div>
+                      return <div className="space-y-2">{rising.map((k,i)=>(<div key={k.kw} onClick={() => { setSelectedCommKeyword(selectedCommKeyword === k.kw ? "" : k.kw); scrollToList() }} className="flex items-center gap-2 p-2 rounded-lg bg-red-900/20 border border-red-500/20 cursor-pointer hover:bg-red-900/40 transition-colors"><span className="text-xs text-red-400 font-bold w-3">{i+1}</span><span className="text-xs text-white flex-1 truncate">{k.kw}</span><span className="text-xs font-bold text-red-400">▲{k.rise}</span><span className="text-xs text-gray-500">{k.cnt}건</span></div>))}</div>
                     })()}
                   </div>
 
@@ -1888,11 +1888,11 @@ export default function Home() {
                       return (
                         <div key={label} className="mb-4 last:mb-0">
                           <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{backgroundColor:color}}></div><span className="text-xs font-medium text-white">{label}</span></div>
+                            <div className="flex items-center gap-1.5 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => { setCommKeyword(label); setCommSentiment("전체"); scrollToList() }}><div className="w-2 h-2 rounded-full" style={{backgroundColor:color}}></div><span className="text-xs font-medium text-white">{label}</span></div>
                             <div className="flex items-center gap-1.5"><span className="text-xs font-bold text-green-400">{Math.round(pos/total*100)}% 긍정</span><span className="text-xs text-gray-600">{arr.length}건</span></div>
                           </div>
                           {([["긍정",pos,"#10b981"],["부정",neg,"#ef4444"],["중립",neu,"#6b7280"]] as [string,number,string][]).map(([s,v,c])=>(
-                            <div key={s} className="flex items-center gap-2 mb-1">
+                            <div key={s} className="flex items-center gap-2 mb-1 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => { setCommKeyword(label); setCommSentiment(s); scrollToList() }}>
                               <span className="text-xs w-6 flex-shrink-0" style={{color:c}}>{s}</span>
                               <div className="flex-1 h-1.5 bg-gray-700 rounded-full"><div className="h-1.5 rounded-full" style={{width:Math.round(v/total*100)+"%",backgroundColor:c}}></div></div>
                               <span className="text-xs text-gray-500 w-7 text-right">{Math.round(v/total*100)}%</span>
@@ -1918,7 +1918,7 @@ export default function Home() {
                         const top2 = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,2)
                         const col = COMMUNITY_COLORS[comm]||"#6b7280"
                         return (
-                          <div key={comm} className="flex items-start gap-2">
+                          <div key={comm} className="flex items-start gap-2 cursor-pointer hover:bg-gray-700/30 rounded-lg p-1 -mx-1 transition-colors" onClick={() => { setCommCommunity(commCommunity === comm ? "전체" : comm); scrollToList() }}>
                             <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{backgroundColor:col}}></div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1"><span className="text-xs font-medium" style={{color:col}}>{comm}</span><span className="text-xs text-gray-600">({cp.length})</span></div>
