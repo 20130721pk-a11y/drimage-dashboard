@@ -167,6 +167,7 @@ export default function Home() {
   const [coverageModal, setCoverageModal] = useState<string | null>(null)
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [commKwDetailTab, setCommKwDetailTab] = useState<string>('드림에이지')
+  const [commChannelPopup, setCommChannelPopup] = useState<string>('')
   const [commSubKeyword, setCommSubKeyword] = useState<string>('전체')
   const [commCategoryFilter, setCommCategoryFilter] = useState<string>('전체')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
@@ -1755,14 +1756,15 @@ export default function Home() {
 <div className="col-span-3 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex gap-1 bg-gray-700 p-0.5 rounded-lg">
-                        {['드림에이지','알케론','아키텍트'].map(kw=>(
+                        {(commKeyword==='경쟁사'?['포트나이트','배틀그라운드','발로란트','이터널리턴','리그오브레전드']:['드림에이지','알케론','아키텍트']).map(kw=>(
                           <button key={kw} onClick={()=>setCommKwDetailTab(kw)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${commKwDetailTab===kw?'bg-white text-gray-900':'text-gray-400 hover:text-white'}`}>{kw}</button>
                         ))}
                       </div>
                     </div>
                     {(() => {
-                      const kwMap: Record<string,string[]> = {'드림에이지':['드림에이지'],'알케론':['알케론','arkheron','Arkheron'],'아키텍트':['아키텍트']}
-                      const kwPosts = dateFilteredKeywordPosts.filter(p => kwMap[commKwDetailTab]?.some(kw=>p.keyword===kw))
+                      const kwMap: Record<string,string[]> = {'드림에이지':['드림에이지'],'알케론':['알케론','arkheron','Arkheron'],'아키텍트':['아키텍트'],'포트나이트':['포트나이트'],'배틀그라운드':['배틀그라운드','배그'],'발로란트':['발로란트'],'이터널리턴':['이터널리턴'],'리그오브레전드':['리그오브레전드','롤']}
+                      const _activeTab = Object.keys(kwMap).includes(commKwDetailTab)?commKwDetailTab:(commKeyword==='경쟁사'?'포트나이트':'드림에이지')
+                      const kwPosts = dateFilteredKeywordPosts.filter(p => kwMap[_activeTab]?.some(kw=>p.keyword===kw))
                       const pos = kwPosts.filter(p=>p.sentiment==='긍정').length
                       const neg = kwPosts.filter(p=>p.sentiment==='부정').length
                       const neu = kwPosts.filter(p=>p.sentiment==='중립').length
@@ -1859,7 +1861,7 @@ export default function Home() {
                           const cnt = categoryFilteredPosts.filter(p=>p.community===name).length
                           const total = categoryFilteredPosts.length||1
                           return (
-                            <div key={name} className="flex items-center gap-2">
+                            <div key={name} className="flex items-center gap-2 cursor-pointer hover:bg-gray-700/40 rounded px-1 -mx-1 transition-colors" onClick={()=>setCommChannelPopup(name)}>
                               <span className="text-xs w-14 truncate flex-shrink-0" style={{color}}>{name}</span>
                               <div className="flex-1 h-1.5 bg-gray-700 rounded-full">
                                 <div className="h-1.5 rounded-full" style={{width:`${cnt/total*100}%`,backgroundColor:color}}></div>
@@ -1873,7 +1875,28 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 커뮤니티 인사이트 */}
+                {commChannelPopup && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={()=>setCommChannelPopup('')}>
+                  <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e=>e.stopPropagation()}>
+                    <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                      <p className="text-sm font-bold text-white">{commChannelPopup} <span className="text-gray-500 font-normal text-xs">게시물 목록</span></p>
+                      <button onClick={()=>setCommChannelPopup('')} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
+                    </div>
+                    <div className="overflow-y-auto flex-1 p-4 space-y-2">
+                      {categoryFilteredPosts.filter(p=>p.community===commChannelPopup).slice(0,50).map(p=>(
+                        <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" className="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-xs text-white line-clamp-2 flex-1">{p.title}</p>
+                            <span className={"text-xs px-1.5 py-0.5 rounded flex-shrink-0 "+(p.sentiment==='긍정'?'bg-green-900/50 text-green-400':p.sentiment==='부정'?'bg-red-900/50 text-red-400':'bg-gray-700 text-gray-400')}>{p.sentiment||'중립'}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">{(p.posted_at||p.collected_at||'').slice(0,10)}</p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* 커뮤니티 인사이트 */}
                 <div className="grid grid-cols-12 gap-4 mb-6">
 
                   {/* ① 이슈 레이더 */}
