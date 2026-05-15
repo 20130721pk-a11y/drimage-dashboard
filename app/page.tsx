@@ -747,11 +747,11 @@ export default function Home() {
                     <ResponsiveContainer width="100%" height={120}>
                       <AreaChart data={(() => {
                         return Array.from({ length: 7 }, (_, i) => {
-                          const d = new Date(); d.setDate(d.getDate() - (6 - i))
-                          const ds = d.toISOString().split("T")[0]
-                          const dn = new Date(d); dn.setDate(dn.getDate()+1); const dsn = dn.toISOString().split("T")[0]
+                          const _kst=new Date(Date.now()+9*3600000); const _y=_kst.getUTCFullYear(),_mo=_kst.getUTCMonth(),_bd=_kst.getUTCDate();
+                          const _d=new Date(Date.UTC(_y,_mo,_bd-(6-i))); const ds=_d.toISOString().split("T")[0];
+                          const _dn=new Date(Date.UTC(_y,_mo,_bd-(6-i)+1)); const dsn=_dn.toISOString().split("T")[0];
                           return {
-                            date: `${d.getMonth()+1}/${d.getDate()}`,
+                            date: `${_d.getUTCMonth()+1}/${_d.getUTCDate()}`,
                             자사: news.filter(n=>{const v=n.published_at||n.collected_at||"";return n.category==="자사"&&v>=ds&&v<dsn}).length,
                             경쟁사: news.filter(n=>{const v=n.published_at||n.collected_at||"";return n.category==="경쟁사"&&v>=ds&&v<dsn}).length,
                             업계: news.filter(n=>{const v=n.published_at||n.collected_at||"";return n.category==="업계"&&v>=ds&&v<dsn}).length,
