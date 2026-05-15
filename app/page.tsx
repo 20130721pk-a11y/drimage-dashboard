@@ -755,6 +755,7 @@ export default function Home() {
                             자사: news.filter(n=>{const v=n.published_at||n.collected_at||"";return n.category==="자사"&&v>=ds&&v<dsn}).length,
                             경쟁사: news.filter(n=>{const v=n.published_at||n.collected_at||"";return n.category==="경쟁사"&&v>=ds&&v<dsn}).length,
                             업계: news.filter(n=>{const v=n.published_at||n.collected_at||"";return n.category==="업계"&&v>=ds&&v<dsn}).length,
+                          }
                         })
                       })()}>
                         <defs>
