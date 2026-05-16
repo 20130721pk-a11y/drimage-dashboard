@@ -143,6 +143,7 @@ export default function Home() {
   const [adPlatform, setAdPlatform] = useState('전체')
   const [adCompetitor, setAdCompetitor] = useState('전체')
   const [adTab, setAdTab] = useState('크리에이티브')
+  const [adRegion, setAdRegion] = useState('전체')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [dateMode, setDateMode] = useState<'single' | 'range'>('range')
@@ -2128,7 +2129,7 @@ export default function Home() {
 
               {activeTab === 'ads' && (
                 <div>
-                  <div className="flex items-center gap-4 mb-6 bg-gray-800 rounded-2xl p-4 border border-gray-700">
+                  <div className="flex flex-wrap items-center gap-3 mb-6 bg-gray-800 rounded-2xl p-4 border border-gray-700">
                     <div className="flex gap-1 bg-gray-700 p-1 rounded-xl">
                       {['전체','Google'].map(p => (
                         <button key={p} onClick={()=>setAdPlatform(p)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all "+(adPlatform===p?'bg-white text-gray-900 shadow':'text-gray-400 hover:text-white')}>{p}</button>
@@ -2148,10 +2149,16 @@ export default function Home() {
                         <button key={id} onClick={()=>setAdCompetitor(id)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all border "+(adCompetitor===id?'bg-indigo-600 text-white border-indigo-500':'border-gray-700 text-gray-400 hover:text-white')}>{label}</button>
                       ))}
                     </div>
+                    <div className="flex items-center gap-2 w-full border-t border-gray-700 pt-3">
+                      <span className="text-xs text-gray-500 shrink-0">권역</span>
+                      {['전체','KR','US','JP'].map(r=>(
+                        <button key={r} onClick={()=>setAdRegion(r)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all border "+(adRegion===r?'bg-blue-600 text-white border-blue-500':'border-gray-700 text-gray-400 hover:text-white')}>{r==='전체'?'🌐 전체':r}</button>
+                      ))}
+                    </div>
                   </div>
 
                   {adTab==='크리에이티브' && (()=>{
-                    const filtered=competitorAds.filter(a=>(adPlatform==='전체'||a.platform===adPlatform)&&(adCompetitor==='전체'||a.competitor.includes(adCompetitor)))
+                    const filtered=competitorAds.filter(a=>(adPlatform==='전체'||a.platform===adPlatform)&&(adCompetitor==='전체'||a.competitor.includes(adCompetitor))&&(adRegion==='전체'||a.region===adRegion))
                     if(filtered.length===0) return <div className="flex flex-col items-center justify-center py-20 text-gray-500"><p className="text-4xl mb-3">📢</p><p className="text-sm">수집된 광고 데이터가 없어요</p><p className="text-xs mt-1 text-gray-600">Actions에서 ad_crawler를 수동 실행해주세요</p></div>
                     return <div className="grid grid-cols-4 gap-4">{filtered.slice(0,40).map(ad=>{
                       const typeIcon = ad.ad_type==='Video'?'📺':ad.ad_type==='Image'?'🖼️':'📝';
@@ -2168,7 +2175,7 @@ export default function Home() {
                           }
                           <span className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full bg-black/60 text-white">{typeIcon} {typeLabel}</span>
                         </div>
-                        <div className="p-4"><div className="flex items-center gap-2 mb-2"><span className="text-xs px-2 py-0.5 rounded-full bg-green-900/50 text-green-400">{ad.platform}</span><span className="text-xs text-indigo-400">{ad.competitor.split('(')[0].trim()}</span></div><p className="text-xs text-white font-medium line-clamp-2 mb-1">{ad.title}</p><p className="text-xs text-gray-500">{(ad.published_at||'').slice(0,10)}</p></div>
+                        <div className="p-4"><div className="flex items-center gap-2 mb-2"><span className="text-xs px-2 py-0.5 rounded-full bg-green-900/50 text-green-400">{ad.platform}</span>{ad.region&&<span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">{ad.region}</span>}<span className="text-xs text-indigo-400">{ad.competitor.split('(')[0].trim()}</span></div><p className="text-xs text-white font-medium line-clamp-2 mb-1">{ad.title}</p><p className="text-xs text-gray-500">{(ad.published_at||'').slice(0,10)}</p></div>
                       </a>);
                     })}</div>
                   })()}
