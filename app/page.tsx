@@ -46,6 +46,7 @@ const COMMUNITY_META: Record<string, {category: string, gender: string, age: str
   '루리웹':     { category: '웹진',     gender: '혼합',    age: '20-30대' },
   '디시인사이드':{ category: '게임특화', gender: '남성중심', age: '10-30대' },
   '아카라이브': { category: '게임특화', gender: '혼합',    age: '10-20대' },
+  '미니맵':    { category: '게임특화', gender: '혼합',    age: '20-30대' },
   '네이버카페': { category: '유저특화', gender: '혼합',    age: '다양'    },
   '에펨코리아': { category: '유저특화', gender: '남성중심', age: '20-30대' },
   '네이트판':   { category: '유저특화', gender: '여성중심', age: '20-30대' },
@@ -625,7 +626,7 @@ export default function Home() {
     return dayNames.map((day, i) => ({
       day,
       웹진: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['인벤','루리웹'].includes(p.community) }).length,
-      게임특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['디시인사이드','아카라이브'].includes(p.community) }).length,
+      게임특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['디시인사이드','아카라이브','미니맵'].includes(p.community) }).length,
       유저특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['네이버카페','에펨코리아','네이트판'].includes(p.community) }).length,
     }))
   }, [dateFilteredKeywordPosts])
@@ -649,7 +650,7 @@ export default function Home() {
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       웹진: byComm(['인벤','루리웹']),
-      게임특화: byComm(['디시인사이드','아카라이브']),
+      게임특화: byComm(['디시인사이드','아카라이브','미니맵']),
       유저특화: byComm(['네이버카페','에펨코리아','네이트판']),
     }
   }), [posts])
