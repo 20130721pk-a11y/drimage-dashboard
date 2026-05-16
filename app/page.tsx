@@ -12,7 +12,7 @@ type CompetitorAd = {
 }
 
 type Stream = { id: string; title: string; channel_name: string; platform: string; url: string; thumbnail: string; category: string; tags: string[]; is_live: boolean; started_at: string; viewer_count: number; collected_at: string }
-type Post = { id: string; title: string; content: string; url: string; community: string; views: number; comments: number; sentiment: string; sentiment_reason: string; keyword: string; posted_at: string; collected_at: string }
+type Post = { id: string; title: string; content: string; url: string; community: string; views: number; comments: number; sentiment: string; sentiment_reason: string; keyword: string; posted_at: string; collected_at: string; category: string }
 
 const COLORS: Record<string, string> = {
   '자사': '#6366f1', '경쟁사': '#ef4444', '업계': '#10b981',
