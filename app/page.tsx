@@ -2168,7 +2168,7 @@ export default function Home() {
                           }
                           <span className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full bg-black/60 text-white">{typeIcon} {typeLabel}</span>
                         </div>
-                        <div className="p-4"><div className="flex items-center gap-2 mb-2"><span className="text-xs px-2 py-0.5 rounded-full bg-green-900/50 text-green-400">{ad.platform}</span><span className="text-xs text-indigo-400">{ad.competitor}</span></div><p className="text-xs text-white font-medium line-clamp-2 mb-1">{ad.title}</p><p className="text-xs text-gray-500">{(ad.published_at||'').slice(0,10)}</p></div>
+                        <div className="p-4"><div className="flex items-center gap-2 mb-2"><span className="text-xs px-2 py-0.5 rounded-full bg-green-900/50 text-green-400">{ad.platform}</span><span className="text-xs text-indigo-400">{ad.competitor.split('(')[0].trim()}</span></div><p className="text-xs text-white font-medium line-clamp-2 mb-1">{ad.title}</p><p className="text-xs text-gray-500">{(ad.published_at||'').slice(0,10)}</p></div>
                       </a>);
                     })}</div>
                   })()}
