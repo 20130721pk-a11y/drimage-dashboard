@@ -144,6 +144,7 @@ export default function Home() {
   const [adCompetitor, setAdCompetitor] = useState('전체')
   const [adTab, setAdTab] = useState('크리에이티브')
   const [adRegion, setAdRegion] = useState('전체')
+  const [adType, setAdType] = useState('전체')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [dateMode, setDateMode] = useState<'single' | 'range'>('range')
@@ -2166,8 +2167,9 @@ export default function Home() {
                     const PIE_COLORS=['#6366f1','#10b981','#f59e0b','#ef4444']
                     const REGIONS=['KR','US','JP','TW','GB','DE','BR']
                     const byCompetitor=COMP_LIST.map(c=>({name:COMP_SHORT[c],fullName:c,count:chartBase.filter(a=>a.competitor.includes(c)).length}))
-                    const typeAgg=chartBase.reduce((acc:Record<string,number>,a)=>{const t=a.ad_type==='Video'?'동영상':a.ad_type==='Image'?'이미지':a.ad_type==='Text'?'텍스트':'기타';acc[t]=(acc[t]||0)+1;return acc},{})
-                    const byType=Object.entries(typeAgg).map(([name,value])=>({name,value}))
+                    const typeAgg=chartBase.reduce((acc:Record<string,number>,a)=>{const t=a.ad_type||'기타';acc[t]=(acc[t]||0)+1;return acc},{})
+                    const TYPE_LABEL:Record<string,string>={Video:'동영상',Image:'이미지',Text:'텍스트'}
+                    const byType=Object.entries(typeAgg).map(([rawType,value])=>({name:TYPE_LABEL[rawType]||rawType,value,rawType}))
                     const matrix=COMP_LIST.map(c=>{const row:Record<string,any>={name:COMP_SHORT[c]};REGIONS.forEach(r=>{row[r]=chartBase.filter(a=>a.competitor.includes(c)&&a.region===r).length});return row})
                     return(
                       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -2178,7 +2180,7 @@ export default function Home() {
                               <XAxis dataKey="name" tick={{fontSize:10,fill:'#9ca3af'}} axisLine={false} tickLine={false}/>
                               <YAxis tick={{fontSize:10,fill:'#9ca3af'}} axisLine={false} tickLine={false} allowDecimals={false}/>
                               <Tooltip contentStyle={{background:'#1f2937',border:'1px solid #374151',borderRadius:'8px',fontSize:'12px'}}/>
-                              <Bar dataKey="count" radius={[4,4,0,0]}>{byCompetitor.map((entry,i)=><Cell key={i} fill={COMP_COLOR[entry.fullName]||'#6366f1'}/>)}</Bar>
+                              <Bar dataKey="count" radius={[4,4,0,0]} onClick={(data:any)=>setAdCompetitor(data.fullName===adCompetitor?'전체':data.fullName)} style={{cursor:'pointer'}}>{byCompetitor.map((entry,i)=><Cell key={i} fill={COMP_COLOR[entry.fullName]||'#6366f1'} opacity={adCompetitor==='전체'||adCompetitor===entry.fullName?1:0.3}/>)}</Bar>
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
@@ -2186,8 +2188,8 @@ export default function Home() {
                           <p className="text-xs text-gray-500 font-medium mb-3">🎨 광고 유형 분포</p>
                           <ResponsiveContainer width="100%" height={180}>
                             <PieChart>
-                              <Pie data={byType} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" label={({name,percent}:any)=>`${name} ${((percent||0)*100).toFixed(0)}%`} labelLine={false} fontSize={10}>
-                                {byType.map((_,i)=><Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
+                              <Pie data={byType} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" label={({name,percent}:any)=>`${name} ${((percent||0)*100).toFixed(0)}%`} labelLine={false} fontSize={10} onClick={(data:any)=>setAdType(data.rawType===adType?'전체':data.rawType)} style={{cursor:'pointer'}}>
+                                {byType.map((entry:any,i:number)=><Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]} opacity={adType==='전체'||adType===entry.rawType?1:0.3}/>)}
                               </Pie>
                               <Tooltip contentStyle={{background:'#1f2937',border:'1px solid #374151',borderRadius:'8px',fontSize:'12px'}}/>
                             </PieChart>
@@ -2197,7 +2199,7 @@ export default function Home() {
                           <p className="text-xs text-gray-500 font-medium mb-3">🌐 경쟁사 × 권역 매트릭스</p>
                           <table className="w-full text-xs mt-1">
                             <thead><tr><th className="text-left text-gray-600 pb-2 font-medium w-16"></th>{REGIONS.map(r=><th key={r} className="text-center text-gray-400 pb-2 font-medium">{r}</th>)}</tr></thead>
-                            <tbody>{matrix.map((row,i)=>{const max=Math.max(...REGIONS.map(r=>row[r]),1);return(<tr key={i} className="border-t border-gray-700/50">{[<td key="n" className="py-1.5 text-gray-400 pr-2 truncate max-w-0 w-16">{row.name}</td>,...REGIONS.map(r=>{const val=row[r];const alpha=val>0?(0.2+(val/max)*0.8):0;return(<td key={r} className="text-center py-1"><span className="inline-flex items-center justify-center w-8 h-6 rounded text-xs" style={{background:val>0?`rgba(99,102,241,${alpha})`:'transparent',color:val>0?'white':'#4b5563'}}>{val||'·'}</span></td>)})]}</tr>)})}</tbody>
+                            <tbody>{matrix.map((row,i)=>{const max=Math.max(...REGIONS.map(r=>row[r]),1);return(<tr key={i} className="border-t border-gray-700/50">{[<td key="n" className="py-1.5 text-gray-400 pr-2 truncate max-w-0 w-16">{row.name}</td>,...REGIONS.map(r=>{const val=row[r];const alpha=val>0?(0.2+(val/max)*0.8):0;return(<td key={r} className="text-center py-1"><span className="inline-flex items-center justify-center w-8 h-6 rounded text-xs" style={{background:val>0?`rgba(99,102,241,${alpha})`:'transparent',color:val>0?'white':'#4b5563',cursor:val>0?'pointer':'default',outline:adCompetitor===COMP_LIST[i]&&adRegion===r?'2px solid #818cf8':'none'}} onClick={()=>{if(val>0){const fn=COMP_LIST[i];const sameCell=adCompetitor===fn&&adRegion===r;setAdCompetitor(sameCell?'전체':fn);setAdRegion(sameCell?'전체':r)}}}>{val||'·'}</span></td>)})]}</tr>)})}</tbody>
                           </table>
                         </div>
                       </div>
@@ -2205,7 +2207,7 @@ export default function Home() {
                   })()}
 
                   {adTab==='크리에이티브' && (()=>{
-                    const filtered=competitorAds.filter(a=>(adPlatform==='전체'||a.platform===adPlatform)&&(adCompetitor==='전체'||a.competitor.includes(adCompetitor))&&(adRegion==='전체'||a.region===adRegion))
+                    const filtered=competitorAds.filter(a=>(adPlatform==='전체'||a.platform===adPlatform)&&(adCompetitor==='전체'||a.competitor.includes(adCompetitor))&&(adRegion==='전체'||a.region===adRegion)&&(adType==='전체'||a.ad_type===adType))
                     if(filtered.length===0) return <div className="flex flex-col items-center justify-center py-20 text-gray-500"><p className="text-4xl mb-3">📢</p><p className="text-sm">수집된 광고 데이터가 없어요</p><p className="text-xs mt-1 text-gray-600">Actions에서 ad_crawler를 수동 실행해주세요</p></div>
                     return <div className="grid grid-cols-4 gap-4">{filtered.slice(0,40).map(ad=>{
                       const typeIcon = ad.ad_type==='Video'?'📺':ad.ad_type==='Image'?'🖼️':'📝';
