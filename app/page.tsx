@@ -2135,8 +2135,17 @@ export default function Home() {
                       ))}
                     </div>
                     <div className="flex gap-1 flex-wrap">
-                      {['전체','포트나이트','배틀그라운드','발로란트','이터널리턴','리그오브레전드','오버워치2','에이펙스 레전드'].map(c => (
-                        <button key={c} onClick={()=>setAdCompetitor(c)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all border "+(adCompetitor===c?'bg-indigo-600 text-white border-indigo-500':'border-gray-700 text-gray-400 hover:text-white')}>{c}</button>
+                      {[
+                        {id:'전체',label:'전체'},
+                        {id:'포트나이트',label:'Epic Games (포트나이트 포함)'},
+                        {id:'배틀그라운드',label:'Krafton (배틀그라운드 포함)'},
+                        {id:'발로란트',label:'Riot Games (발로란트 포함)'},
+                        {id:'이터널리턴',label:'Nimble Neuron (이터널리턴 포함)'},
+                        {id:'리그오브레전드',label:'Riot Games (리그오브레전드 포함)'},
+                        {id:'오버워치2',label:'Blizzard (오버워치2 포함)'},
+                        {id:'에이펙스 레전드',label:'EA (에이펙스 레전드 포함)'},
+                      ].map(({id,label}) => (
+                        <button key={id} onClick={()=>setAdCompetitor(id)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all border "+(adCompetitor===id?'bg-indigo-600 text-white border-indigo-500':'border-gray-700 text-gray-400 hover:text-white')}>{label}</button>
                       ))}
                     </div>
                   </div>
