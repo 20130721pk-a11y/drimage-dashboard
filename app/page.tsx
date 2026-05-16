@@ -1002,6 +1002,7 @@ export default function Home() {
                           { key: '구글 뉴스', label: 'Google', icon: '🔍' },
                           { key: '네이버 뉴스', label: 'Naver', icon: '🟢' },
                           { key: '네이버 블로그', label: 'Blog', icon: '✏️' },
+                          { key: '게임웹진', label: 'Webzine', icon: '🎮' },
                         ].map(st => (
                           <button key={st.key} onClick={() => setSourceType(st.key)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${sourceType===st.key ? 'bg-white text-gray-900 shadow' : 'text-gray-400 hover:text-white'}`}>
