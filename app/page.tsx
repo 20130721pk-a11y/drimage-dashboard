@@ -353,7 +353,7 @@ export default function Home() {
       const src = n.source?.includes('Google News') ? '구글 뉴스'
         : n.source?.includes('네이버블로그') ? '네이버 블로그'
         : n.source?.includes('네이버') ? '네이버 뉴스'
-        : n.source?.includes('루리웹') ? '루리웹'
+        : n.source?.includes('루리웹') ? '기타'
         : n.source?.includes('인벤') ? '인벤'
         : '기타'
       freq[src] = (freq[src] || 0) + 1
