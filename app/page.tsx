@@ -168,6 +168,7 @@ export default function Home() {
   const [selectedCommKeyword, setSelectedCommKeyword] = useState<string>('')
   const [commKwDetailTab, setCommKwDetailTab] = useState<string>('드림에이지')
   const [commChannelPopup, setCommChannelPopup] = useState<string>('')
+  const [newsSourcePopup, setNewsSourcePopup] = useState<string>('')
   const [commSubKeyword, setCommSubKeyword] = useState<string>('전체')
   const [commCategoryFilter, setCommCategoryFilter] = useState<string>('전체')
   const [channelSort, setChannelSort] = useState<'count'|'viewers'>('count')
@@ -915,7 +916,7 @@ export default function Home() {
                       <p className="text-xs text-gray-600 mb-2">📡 소스별 ({periodLabel})</p>
                       <div className="space-y-1.5">
                         {sourceDetail.map((s,i)=>(
-                          <div key={s.name} className="flex items-center gap-2">
+                          <div key={s.name} className="flex items-center gap-2 cursor-pointer hover:bg-gray-700/40 rounded px-1 -mx-1 transition-colors" onClick={()=>setNewsSourcePopup(s.name)}>
                             <span className="text-xs text-gray-500 w-20 truncate">{s.name}</span>
                             <div className="flex-1 h-1.5 bg-gray-700 rounded-full">
                               <div className="h-1.5 rounded-full" style={{width:`${s.pct}%`,backgroundColor:['#6366f1','#10b981','#f59e0b','#ef4444'][i%4]}}></div>
@@ -928,7 +929,31 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 필터 */}
+                {newsSourcePopup && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={()=>setNewsSourcePopup('')}>
+                  <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e=>e.stopPropagation()}>
+                    <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                      <p className="text-sm font-bold text-white">{newsSourcePopup} <span className="text-gray-500 font-normal text-xs">기사 목록</span></p>
+                      <button onClick={()=>setNewsSourcePopup('')} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
+                    </div>
+                    <div className="overflow-y-auto flex-1 p-4 space-y-2">
+                      {filteredNews.filter(n => {
+                        const mapped = n.source?.includes('네이버블로그')?'네이버 블로그':n.source?.includes('네이버')?'네이버 뉴스':n.source?.includes('Google News')?'구글 뉴스':n.source?.includes('루리웹')?'루리웹':n.source?.includes('인벤')?'인벤':'기타'
+                        return mapped === newsSourcePopup
+                      }).slice(0,50).map(n=>(
+                        <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-xs text-white line-clamp-2 flex-1">{n.title}</p>
+                            <span className={"text-xs px-1.5 py-0.5 rounded flex-shrink-0 "+(n.category==='자사'?'bg-indigo-900/50 text-indigo-400':n.category==='경쟁사'?'bg-red-900/50 text-red-400':'bg-gray-700 text-gray-400')}>{n.category}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">{(n.published_at||'').slice(0,10)}</p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* 필터 */}
                 <div ref={listRef} className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4">
                   <div className="flex items-center gap-4">
                     {/* 카테고리 */}
