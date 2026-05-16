@@ -196,7 +196,7 @@ export default function Home() {
     const [{ data: n }, { data: ca }, { data: s }, { data: p }] = await Promise.all([
       supabase.from('news').select('*').gte('published_at', new Date(Date.now()-30*24*60*60*1000).toISOString()).order('published_at', { ascending: false }).limit(3000),
       supabase.from('competitor_ads').select('*').order('published_at', { ascending: false }).limit(500),
-      supabase.from('streams').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(2000),
+      supabase.from('streams').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(5000),
       supabase.from('community_posts').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(5000),
     ])
     setCompetitorAds(ca || [])
