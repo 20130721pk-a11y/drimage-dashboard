@@ -242,7 +242,9 @@ export default function Home() {
     const matchCat = category === '전체' || n.category === category
     const matchSeg = !segment || n.tags?.includes(segment) || n.title?.includes(segment)
     const matchSearch = n.title?.toLowerCase().includes(search.toLowerCase())
-    const matchSource = sourceType === '전체' || n.source?.includes(SOURCE_MAP[sourceType])
+    const isWebzine = n.source?.includes('인벤') || n.source?.includes('루리웹') || n.source?.includes('thisisgame')
+    const matchSource = sourceType === '전체' || 
+      (sourceType === '게임웹진' ? isWebzine : !isWebzine && n.source?.includes(SOURCE_MAP[sourceType]))
     const matchKeyword = !selectedKeyword || (keywordNewsMap[selectedKeyword] ? keywordNewsMap[selectedKeyword].includes(n.id) : n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword))
     const dateVal = n.published_at || n.collected_at || ''
     return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= df && dateVal <= dt
