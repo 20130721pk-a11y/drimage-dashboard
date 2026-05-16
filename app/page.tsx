@@ -2151,7 +2151,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center gap-2 w-full border-t border-gray-700 pt-3">
                       <span className="text-xs text-gray-500 shrink-0">권역</span>
-                      {['전체','KR','US','JP'].map(r=>(
+                      {['전체','KR','US','JP','TW','GB','DE','BR'].map(r=>(
                         <button key={r} onClick={()=>setAdRegion(r)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all border "+(adRegion===r?'bg-blue-600 text-white border-blue-500':'border-gray-700 text-gray-400 hover:text-white')}>{r==='전체'?'🌐 전체':r}</button>
                       ))}
                     </div>
@@ -2164,7 +2164,7 @@ export default function Home() {
                     const COMP_SHORT:Record<string,string>={'포트나이트':'포트나이트','배틀그라운드':'배그','발로란트':'발로란트','리그오브레전드':'롤','오버워치2':'OW2','에이펙스 레전드':'에이펙스','이터널리턴':'이터널'}
                     const COMP_COLOR:Record<string,string>={'포트나이트':'#b91c1c','배틀그라운드':'#dc2626','발로란트':'#fca5a5','리그오브레전드':'#ef4444','오버워치2':'#f97316','에이펙스 레전드':'#8b5cf6','이터널리턴':'#f87171'}
                     const PIE_COLORS=['#6366f1','#10b981','#f59e0b','#ef4444']
-                    const REGIONS=['KR','US','JP']
+                    const REGIONS=['KR','US','JP','TW','GB','DE','BR']
                     const byCompetitor=COMP_LIST.map(c=>({name:COMP_SHORT[c],fullName:c,count:chartBase.filter(a=>a.competitor.includes(c)).length}))
                     const typeAgg=chartBase.reduce((acc:Record<string,number>,a)=>{const t=a.ad_type==='Video'?'동영상':a.ad_type==='Image'?'이미지':a.ad_type==='Text'?'텍스트':'기타';acc[t]=(acc[t]||0)+1;return acc},{})
                     const byType=Object.entries(typeAgg).map(([name,value])=>({name,value}))
