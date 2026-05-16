@@ -2130,7 +2130,7 @@ export default function Home() {
                 <div>
                   <div className="flex items-center gap-4 mb-6 bg-gray-800 rounded-2xl p-4 border border-gray-700">
                     <div className="flex gap-1 bg-gray-700 p-1 rounded-xl">
-                      {['전체','유튜브','네이버','Meta','Google'].map(p => (
+                      {['전체','Google'].map(p => (
                         <button key={p} onClick={()=>setAdPlatform(p)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all "+(adPlatform===p?'bg-white text-gray-900 shadow':'text-gray-400 hover:text-white')}>{p}</button>
                       ))}
                     </div>
