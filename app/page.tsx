@@ -136,7 +136,7 @@ function getKSTDate(offsetDays = 0) {
 }
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'news' | 'streams' | 'community'>('news')
+  const [activeTab, setActiveTab] = useState<'news' | 'streams' | 'community' | 'ads'>('news')
   const [news, setNews] = useState<News[]>([])
   const [streams, setStreams] = useState<Stream[]>([])
   const [competitorAds, setCompetitorAds] = useState<CompetitorAd[]>([])
@@ -680,9 +680,9 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
-            {(['news','streams','community'] as const).map(tab => (
+            {(['news','streams','community','ads'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === tab ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white'}`}>
-                {tab === 'news' ? '📰 뉴스' : tab === 'streams' ? '🎥 방송' : '💬 커뮤니티'}
+                {tab === 'news' ? '📰 뉴스' : tab === 'streams' ? '🎥 방송' : tab === 'community' ? '💬 커뮤니티' : '📢 광고'}
               </button>
             ))}
           </div>
@@ -2125,6 +2125,36 @@ export default function Home() {
                 )}
               </>
             )}
+
+              {activeTab === 'ads' && (
+                <div>
+                  <div className="flex items-center gap-4 mb-6 bg-gray-800 rounded-2xl p-4 border border-gray-700">
+                    <div className="flex gap-1 bg-gray-700 p-1 rounded-xl">
+                      {['전체','유튜브','네이버','Meta','Google'].map(p => (
+                        <button key={p} onClick={()=>setAdPlatform(p)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all "+(adPlatform===p?'bg-white text-gray-900 shadow':'text-gray-400 hover:text-white')}>{p}</button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1 flex-wrap">
+                      {['전체','포트나이트','배틀그라운드','발로란트','이터널리턴','리그오브레전드','오버워치2','에이펙스 레전드'].map(c => (
+                        <button key={c} onClick={()=>setAdCompetitor(c)} className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all border "+(adCompetitor===c?'bg-indigo-600 text-white border-indigo-500':'border-gray-700 text-gray-400 hover:text-white')}>{c}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mb-4">
+                    {['크리에이티브','뉴스','방송','커뮤니티'].map(t => (
+                      <button key={t} onClick={()=>setAdTab(t)} className={"px-4 py-2 rounded-xl text-sm font-medium transition-all "+(adTab===t?'bg-indigo-600 text-white':'bg-gray-800 text-gray-400 hover:text-white border border-gray-700')}>{t}</button>
+                    ))}
+                  </div>
+                  {adTab==='크리에이티브' && (()=>{
+                    const filtered=competitorAds.filter(a=>(adPlatform==='전체'||a.platform===adPlatform)&&(adCompetitor==='전체'||a.competitor===adCompetitor))
+                    if(filtered.length===0) return <div className="flex flex-col items-center justify-center py-20 text-gray-500"><p className="text-4xl mb-3">📢</p><p className="text-sm">수집된 광고 데이터가 없어요</p><p className="text-xs mt-1 text-gray-600">Actions에서 ad_crawler를 수동 실행해주세요</p></div>
+                    return <div className="grid grid-cols-4 gap-4">{filtered.slice(0,40).map(ad=>(<a key={ad.id} href={ad.url} target="_blank" rel="noopener noreferrer" className="bg-gray-800 rounded-2xl border border-gray-700 hover:border-gray-500 transition-all overflow-hidden group"><div className="w-full h-40 bg-gray-700 overflow-hidden">{ad.thumbnail&&<img src={ad.thumbnail} alt="" className="w-full h-full object-cover"/>}</div><div className="p-4"><div className="flex items-center gap-2 mb-2"><span className={"text-xs px-2 py-0.5 rounded-full "+(ad.platform==='유튜브'?'bg-red-900/50 text-red-400':'bg-green-900/50 text-green-400')}>{ad.platform}</span><span className="text-xs text-indigo-400">{ad.competitor}</span></div><p className="text-xs text-white font-medium line-clamp-2 mb-1">{ad.title}</p><p className="text-xs text-gray-500">{(ad.published_at||'').slice(0,10)}</p></div></a>))}</div>
+                  })()}
+                  {adTab==='뉴스' && <div className="grid grid-cols-3 gap-4">{filteredNews.filter(n=>n.category==='경쟁사').slice(0,30).map(n=>(<a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="bg-gray-800 rounded-2xl p-4 border border-gray-700 hover:border-gray-500 transition-all"><p className="text-xs text-red-400 mb-1">{n.source}</p><p className="text-sm text-white font-medium line-clamp-2 mb-2">{n.title}</p><p className="text-xs text-gray-500">{(n.published_at||'').slice(0,10)}</p></a>))}</div>}
+                  {adTab==='방송' && <div className="grid grid-cols-3 gap-4">{streams.filter(s=>s.category==='경쟁사').slice(0,30).map(s=>(<a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" className="bg-gray-800 rounded-2xl border border-gray-700 hover:border-gray-500 overflow-hidden"><div className="p-4"><p className="text-xs text-blue-400 mb-1">{s.platform} · {s.channel_name}</p><p className="text-sm text-white font-medium line-clamp-2">{s.title}</p></div></a>))}</div>}
+                  {adTab==='커뮤니티' && <div className="grid grid-cols-3 gap-4">{posts.filter(p=>p.category==='경쟁사').slice(0,30).map(p=>(<a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" className="bg-gray-800 rounded-2xl p-4 border border-gray-700 hover:border-gray-500 transition-all"><p className="text-xs text-purple-400 mb-1">{p.community}</p><p className="text-sm text-white font-medium line-clamp-2 mb-2">{p.title}</p><p className="text-xs text-gray-500">{(p.posted_at||'').slice(0,10)}</p></a>))}</div>}
+                </div>
+              )}
           </>
         )}
       </div>
