@@ -8,7 +8,7 @@ type News = { id: string; title: string; summary: string; url: string; source: s
 type CompetitorAd = {
   id: string; platform: string; competitor: string; title: string;
   description: string; url: string; thumbnail: string;
-  published_at: string; ad_type: string; views: number; collected_at: string
+  published_at: string; ad_type: string; views: number; collected_at: string; region: string
 }
 
 type Stream = { id: string; title: string; channel_name: string; platform: string; url: string; thumbnail: string; category: string; tags: string[]; is_live: boolean; started_at: string; viewer_count: number; collected_at: string }
