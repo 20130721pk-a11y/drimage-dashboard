@@ -938,7 +938,7 @@ export default function Home() {
                     </div>
                     <div className="overflow-y-auto flex-1 p-4 space-y-2">
                       {filteredNews.filter(n => {
-                        const mapped = n.source?.includes('네이버블로그')?'네이버 블로그':n.source?.includes('네이버')?'네이버 뉴스':n.source?.includes('Google News')?'구글 뉴스':n.source?.includes('루리웹')?'루리웹':n.source?.includes('인벤')?'인벤':'기타'
+                        const mapped = n.source?.includes('네이버블로그')?'네이버 블로그':n.source?.includes('네이버')?'네이버 뉴스':n.source?.includes('Google News')?'구글 뉴스':n.source?.includes('인벤')?'인벤':'기타'
                         return mapped === newsSourcePopup
                       }).slice(0,50).map(n=>(
                         <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
