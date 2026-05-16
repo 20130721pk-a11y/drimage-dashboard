@@ -5,6 +5,12 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 
 type NewsKeyword = { keyword: string; category: string; count: number }
 type News = { id: string; title: string; summary: string; url: string; source: string; category: string; tags: string[]; published_at: string; collected_at: string }
+type CompetitorAd = {
+  id: string; platform: string; competitor: string; title: string;
+  description: string; url: string; thumbnail: string;
+  published_at: string; ad_type: string; views: number; collected_at: string
+}
+
 type Stream = { id: string; title: string; channel_name: string; platform: string; url: string; thumbnail: string; category: string; tags: string[]; is_live: boolean; started_at: string; viewer_count: number; collected_at: string }
 type Post = { id: string; title: string; content: string; url: string; community: string; views: number; comments: number; sentiment: string; sentiment_reason: string; keyword: string; posted_at: string; collected_at: string }
 
@@ -133,6 +139,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'news' | 'streams' | 'community'>('news')
   const [news, setNews] = useState<News[]>([])
   const [streams, setStreams] = useState<Stream[]>([])
+  const [competitorAds, setCompetitorAds] = useState<CompetitorAd[]>([])
+  const [adPlatform, setAdPlatform] = useState('전체')
+  const [adCompetitor, setAdCompetitor] = useState('전체')
+  const [adTab, setAdTab] = useState('크리에이티브')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [dateMode, setDateMode] = useState<'single' | 'range'>('range')
@@ -183,8 +193,9 @@ export default function Home() {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: n }, { data: s }, { data: p }] = await Promise.all([
+    const [{ data: ca }, { data: n }, { data: s }, { data: p }] = await Promise.all([
       supabase.from('news').select('*').gte('published_at', new Date(Date.now()-30*24*60*60*1000).toISOString()).order('published_at', { ascending: false }).limit(3000),
+      supabase.from('competitor_ads').select('*').order('published_at', { ascending: false }).limit(500),
       supabase.from('streams').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(2000),
       supabase.from('community_posts').select('*').gte('collected_at', new Date(Date.now()-90*24*60*60*1000).toISOString()).order('collected_at', { ascending: false }).limit(5000),
     ])
