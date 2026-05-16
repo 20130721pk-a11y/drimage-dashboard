@@ -340,6 +340,7 @@ export default function Home() {
     }
     return newsKeywords
       .filter(k => category === '전체' || k.category === category)
+      .filter(k => !['루리웹','인벤','네이버','구글','뉴스','블로그','기사','출처','게임뉴스'].includes(k.keyword))
       .slice(0, 30)
       .map(k => ({ name: k.keyword, count: k.count, cat: k.category }))
   })()
