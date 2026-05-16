@@ -2186,7 +2186,7 @@ export default function Home() {
                           <p className="text-xs text-gray-500 font-medium mb-3">🎨 광고 유형 분포</p>
                           <ResponsiveContainer width="100%" height={180}>
                             <PieChart>
-                              <Pie data={byType} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" label={({name,percent}:{name:string,percent:number})=>`${name} ${(percent*100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                              <Pie data={byType} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" label={({name,percent}:any)=>`${name} ${((percent||0)*100).toFixed(0)}%`} labelLine={false} fontSize={10}>
                                 {byType.map((_,i)=><Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
                               </Pie>
                               <Tooltip contentStyle={{background:'#1f2937',border:'1px solid #374151',borderRadius:'8px',fontSize:'12px'}}/>
