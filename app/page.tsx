@@ -262,8 +262,9 @@ export default function Home() {
     const matchSource = sourceType === '전체' || 
       (sourceType === '게임웹진' ? isWebzine : !isWebzine && n.source?.includes(SOURCE_MAP[sourceType]))
     const matchKeyword = !selectedKeyword || (keywordNewsMap[selectedKeyword] ? keywordNewsMap[selectedKeyword].includes(n.id) : n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword))
-    const dateVal = n.published_at || n.collected_at || ''
-    return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= df && dateVal <= dt
+    const dateVal = new Date(n.published_at || n.collected_at || 0).getTime()
+    const dfT = new Date(df).getTime(); const dtT = new Date(dt).getTime()
+    return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= dfT && dateVal <= dtT
   }), [news, category, segment, search, sourceType, selectedKeyword, df, dt])
 
   const filteredStreams = useMemo(() => streams.filter(s => {
@@ -277,8 +278,9 @@ export default function Home() {
       (s.title||'').toLowerCase().includes(alias.toLowerCase())
     )
     const matchStreamKw = !selectedStreamKeyword || s.tags?.includes(selectedStreamKeyword) || s.title?.includes(selectedStreamKeyword)
-    const dateVal = s.platform === '유튜브' ? (s.collected_at || s.started_at || '') : (s.started_at || s.collected_at || '')
-    const matchDate = dateVal >= df && dateVal <= dt
+    const dateVal = new Date(s.platform === '유튜브' ? (s.collected_at || s.started_at || 0) : (s.started_at || s.collected_at || 0)).getTime()
+    const dfT = new Date(df).getTime(); const dtT = new Date(dt).getTime()
+    const matchDate = dateVal >= dfT && dateVal <= dtT
     return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate && matchStreamKw
   }), [streams, streamCategory, streamPlatform, streamSearch, streamType, streamSegment, df, dt, selectedStreamKeyword])
 
@@ -301,8 +303,9 @@ export default function Home() {
     const matchCommKw = !selectedCommKeyword || p.title?.includes(selectedCommKeyword) || p.content?.includes(selectedCommKeyword)
     const meta = COMMUNITY_META[p.community] || { category: '', gender: '', age: '' }
     const matchCategory = commCategoryFilter === '전체' || meta.category === commCategoryFilter
-    const dateVal = p.posted_at || p.collected_at || ''
-    return matchSentiment && matchCommunity && matchSearch && matchCommKw && matchCategory && dateVal >= df && dateVal <= dt
+    const dateVal = new Date(p.posted_at || p.collected_at || 0).getTime()
+    const dfT = new Date(df).getTime(); const dtT = new Date(dt).getTime()
+    return matchSentiment && matchCommunity && matchSearch && matchCommKw && matchCategory && dateVal >= dfT && dateVal <= dtT
   }), [keywordPosts, commSentiment, commCommunity, commSearch, df, dt, selectedCommKeyword, commCategoryFilter])
 
   // 뉴스 통계 - 모두 filteredNews 기준으로 통일
@@ -474,9 +477,10 @@ export default function Home() {
   const streamCatCount = ['자사', '경쟁사', '업계'].map(cat => ({ name: cat, value: streams.filter(s => s.category === cat && (s.started_at||'') >= df && (s.started_at||'') <= dt).length }))
 
   // 커뮤니티 통계
+  const dfT = new Date(df).getTime(); const dtT = new Date(dt).getTime()
   const dateFilteredKeywordPosts = keywordPosts.filter(p => {
-    const dv = p.posted_at || p.collected_at || ''
-    return dv >= df && dv <= dt
+    const dv = new Date(p.posted_at || p.collected_at || 0).getTime()
+    return dv >= dfT && dv <= dtT
   })
   // 카테고리 필터까지 적용된 기준 (감성/채널/검색 제외)
   const categoryFilteredPosts = commCategoryFilter === '전체' ? dateFilteredKeywordPosts : dateFilteredKeywordPosts.filter(p => {
