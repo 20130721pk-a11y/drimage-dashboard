@@ -262,7 +262,8 @@ export default function Home() {
     const matchSource = sourceType === '전체' || 
       (sourceType === '게임웹진' ? isWebzine : !isWebzine && n.source?.includes(SOURCE_MAP[sourceType]))
     const matchKeyword = !selectedKeyword || (keywordNewsMap[selectedKeyword] ? keywordNewsMap[selectedKeyword].includes(n.id) : n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword))
-    const dateVal = new Date(n.published_at || n.collected_at || 0).getTime()
+    if (!n.published_at) return false  // published_at 없으면 날짜 불명 → 제외
+    const dateVal = new Date(n.published_at).getTime()
     const dfT = new Date(df).getTime(); const dtT = new Date(dt).getTime()
     return matchCat && matchSeg && matchSearch && matchSource && matchKeyword && dateVal >= dfT && dateVal <= dtT
   }), [news, category, segment, search, sourceType, selectedKeyword, df, dt])
