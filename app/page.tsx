@@ -2162,6 +2162,7 @@ export default function Home() {
 
                   {competitorAds.length>0&&(()=>{
                     const chartBase=competitorAds.filter(a=>(adPlatform==='전체'||a.platform===adPlatform)&&(adRegion==='전체'||a.region===adRegion))
+                    const chartBaseNoRegion=competitorAds.filter(a=>(adPlatform==='전체'||a.platform===adPlatform))
                     const COMP_LIST=['포트나이트','배틀그라운드','발로란트','리그오브레전드','오버워치2','에이펙스 레전드','이터널리턴']
                     const COMP_SHORT:Record<string,string>={'포트나이트':'포트나이트','배틀그라운드':'배그','발로란트':'발로란트','리그오브레전드':'롤','오버워치2':'OW2','에이펙스 레전드':'에이펙스','이터널리턴':'이터널'}
                     const COMP_COLOR:Record<string,string>={'포트나이트':'#b91c1c','배틀그라운드':'#dc2626','발로란트':'#fca5a5','리그오브레전드':'#ef4444','오버워치2':'#f97316','에이펙스 레전드':'#8b5cf6','이터널리턴':'#f87171'}
@@ -2171,7 +2172,7 @@ export default function Home() {
                     const typeAgg=chartBase.reduce((acc:Record<string,number>,a)=>{const t=a.ad_type||'기타';acc[t]=(acc[t]||0)+1;return acc},{})
                     const TYPE_LABEL:Record<string,string>={Video:'동영상',Image:'이미지',Text:'텍스트'}
                     const byType=Object.entries(typeAgg).map(([rawType,value])=>({name:TYPE_LABEL[rawType]||rawType,value,rawType}))
-                    const matrix=COMP_LIST.map(c=>{const row:Record<string,any>={name:COMP_SHORT[c]};REGIONS.forEach(r=>{row[r]=chartBase.filter(a=>a.competitor.includes(c)&&a.region===r).length});return row})
+                    const matrix=COMP_LIST.map(c=>{const row:Record<string,any>={name:COMP_SHORT[c]};row['All']=chartBaseNoRegion.filter(a=>a.competitor.includes(c)).length;REGIONS.forEach(r=>{row[r]=chartBase.filter(a=>a.competitor.includes(c)&&a.region===r).length});return row})
                     return(
                       <div className="grid grid-cols-3 gap-4 mb-6">
                         <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
@@ -2199,8 +2200,8 @@ export default function Home() {
                         <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
                           <p className="text-xs text-gray-500 font-medium mb-3">🌐 경쟁사 × 권역 매트릭스</p>
                           <table className="w-full text-xs mt-1">
-                            <thead><tr><th className="text-left text-gray-600 pb-2 font-medium w-16"></th>{REGIONS.map(r=><th key={r} className="text-center text-gray-400 pb-2 font-medium">{r}</th>)}</tr></thead>
-                            <tbody>{matrix.map((row,i)=>{const max=Math.max(...REGIONS.map(r=>row[r]),1);return(<tr key={i} className="border-t border-gray-700/50">{[<td key="n" className="py-1.5 text-gray-400 pr-2 truncate max-w-0 w-16">{row.name}</td>,...REGIONS.map(r=>{const val=row[r];const alpha=val>0?(0.2+(val/max)*0.8):0;return(<td key={r} className="text-center py-1"><span className="inline-flex items-center justify-center w-8 h-6 rounded text-xs" style={{background:val>0?`rgba(99,102,241,${alpha})`:'transparent',color:val>0?'white':'#4b5563',cursor:val>0?'pointer':'default',outline:adCompetitor===COMP_LIST[i]&&adRegion===r?'2px solid #818cf8':'none'}} onClick={()=>{if(val>0){const fn=COMP_LIST[i];const sameCell=adCompetitor===fn&&adRegion===r;setAdCompetitor(sameCell?'전체':fn);setAdRegion(sameCell?'전체':r)}}}>{val||'·'}</span></td>)})]}</tr>)})}</tbody>
+                            <thead><tr><th className="text-left text-gray-600 pb-2 font-medium w-16"></th><th key="All" className={`text-center pb-2 font-medium cursor-pointer transition-colors ${adRegion==='전체'?'text-blue-400':'text-gray-500 hover:text-gray-300'}`} onClick={()=>{setAdRegion('전체');setAdCompetitor('전체')}} title="전체 권역 보기">All</th>{REGIONS.map(r=><th key={r} className="text-center text-gray-400 pb-2 font-medium">{r}</th>)}</tr></thead>
+                            <tbody>{matrix.map((row,i)=>{const max=Math.max(...REGIONS.map(r=>row[r]),1);const allVal=row['All'];return(<tr key={i} className="border-t border-gray-700/50">{[<td key="n" className="py-1.5 text-gray-400 pr-2 truncate max-w-0 w-16">{row.name}</td>,<td key="All" className="text-center py-1"><span className="inline-flex items-center justify-center w-8 h-6 rounded text-xs font-semibold" style={{background:allVal>0?'rgba(59,130,246,0.5)':'transparent',color:allVal>0?'white':'#4b5563',cursor:allVal>0?'pointer':'default',outline:adCompetitor===COMP_LIST[i]&&adRegion==='전체'?'2px solid #60a5fa':'none'}} onClick={()=>{if(allVal>0){const fn=COMP_LIST[i];const sameComp=adCompetitor===fn&&adRegion==='전체';setAdCompetitor(sameComp?'전체':fn);setAdRegion('전체')}}}>{allVal||'·'}</span></td>,...REGIONS.map(r=>{const val=row[r];const alpha=val>0?(0.2+(val/max)*0.8):0;return(<td key={r} className="text-center py-1"><span className="inline-flex items-center justify-center w-8 h-6 rounded text-xs" style={{background:val>0?`rgba(99,102,241,${alpha})`:'transparent',color:val>0?'white':'#4b5563',cursor:val>0?'pointer':'default',outline:adCompetitor===COMP_LIST[i]&&adRegion===r?'2px solid #818cf8':'none'}} onClick={()=>{if(val>0){const fn=COMP_LIST[i];const sameCell=adCompetitor===fn&&adRegion===r;setAdCompetitor(sameCell?'전체':fn);setAdRegion(sameCell?'전체':r)}}}>{val||'·'}</span></td>)})]}</tr>)})}</tbody>
                           </table>
                         </div>
                       </div>
