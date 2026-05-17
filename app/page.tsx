@@ -258,7 +258,7 @@ export default function Home() {
     const matchCat = category === '전체' || n.category === category
     const matchSeg = !segment || n.tags?.includes(segment) || n.title?.includes(segment)
     const matchSearch = n.title?.toLowerCase().includes(search.toLowerCase())
-    const isWebzine = n.source?.includes('인벤') || n.source?.includes('루리웹') || n.source?.includes('thisisgame')
+    const isWebzine = n.source?.includes('인벤') || n.source?.includes('루리웹') || n.source?.includes('thisisgame') || n.source?.includes('미니맵')
     const matchSource = sourceType === '전체' || 
       (sourceType === '게임웹진' ? isWebzine : !isWebzine && n.source?.includes(SOURCE_MAP[sourceType]))
     const matchKeyword = !selectedKeyword || (keywordNewsMap[selectedKeyword] ? keywordNewsMap[selectedKeyword].includes(n.id) : n.title?.includes(selectedKeyword) || n.summary?.includes(selectedKeyword) || n.tags?.includes(selectedKeyword))
@@ -962,7 +962,7 @@ export default function Home() {
                     </div>
                     <div className="overflow-y-auto flex-1 p-4 space-y-2">
                       {filteredNews.filter(n => {
-                        const mapped = n.source?.includes('인벤')?'게임웹진':n.source?.includes('루리웹')?'게임웹진':n.source?.includes('thisisgame')?'게임웹진':n.source?.includes('게임조선')?'게임웹진':n.source?.includes('게임메카')?'게임웹진':n.source?.includes('gamechosun')?'게임웹진':n.source?.includes('gamemeca')?'게임웹진':n.source?.includes('네이버블로그')?'네이버 블로그':n.source?.includes('네이버')?'네이버 뉴스':n.source?.includes('Google News')?'구글 뉴스':'기타'
+                        const mapped = n.source?.includes('인벤')?'게임웹진':n.source?.includes('루리웹')?'게임웹진':n.source?.includes('thisisgame')?'게임웹진':n.source?.includes('게임조선')?'게임웹진':n.source?.includes('게임메카')?'게임웹진':n.source?.includes('gamechosun')?'게임웹진':n.source?.includes('gamemeca')?'게임웹진':n.source?.includes('미니맵')?'게임웹진':n.source?.includes('네이버블로그')?'네이버 블로그':n.source?.includes('네이버')?'네이버 뉴스':n.source?.includes('Google News')?'구글 뉴스':'기타'
                         return mapped === newsSourcePopup
                       }).slice(0,50).map(n=>(
                         <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
