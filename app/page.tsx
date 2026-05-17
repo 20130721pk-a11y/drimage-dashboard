@@ -41,7 +41,7 @@ const PLATFORM_ICONS: Record<string, string> = {
   'SOOP': '<svg viewBox="0 0 24 24" fill="#006EFF"><path d="M12 2C8 2 5 4.5 5 8c0 2 1 3.5 2.5 4.5C5.5 13.5 4 15.5 4 18h2c0-2.5 2-4 4-4h.5C8.5 13 7 11.5 7 8c0-2.8 2.2-4 5-4s5 1.2 5 4c0 3.5-1.5 5-3.5 6h.5c2 0 4 1.5 4 4h2c0-2.5-1.5-4.5-3.5-5.5C18 11.5 19 10 19 8c0-3.5-3-6-7-6z"/></svg>',
 }
 
-const COMMUNITY_COLORS: Record<string, string> = { '인벤': '#f59e0b', '루리웹': '#6366f1', '디시인사이드': '#ef4444', '네이버카페': '#10b981', '아카라이브': '#8b5cf6', '에펨코리아': '#3b82f6', '네이트판': '#ec4899', '미니맵': '#22d3ee' }
+const COMMUNITY_COLORS: Record<string, string> = { '인벤': '#f59e0b', '루리웹': '#6366f1', '디스이즈게임': '#0ea5e9', '디시인사이드': '#ef4444', '네이버카페': '#10b981', '아카라이브': '#8b5cf6', '에펨코리아': '#3b82f6', '네이트판': '#ec4899', '미니맵': '#22d3ee' }
 const SEGMENTS: Record<string, string[]> = {
   '자사': ['드림에이지', '아키텍트', '알케론'],
   '경쟁사': ['포트나이트', '리그오브레전드', '이터널리턴', '배틀그라운드', '발로란트', '오버워치2', '에이펙스 레전드'],
@@ -50,6 +50,7 @@ const SEGMENTS: Record<string, string[]> = {
 const COMMUNITY_META: Record<string, {category: string, gender: string, age: string}> = {
   '인벤':       { category: '웹진',     gender: '혼합',    age: '20-30대' },
   '루리웹':     { category: '웹진',     gender: '혼합',    age: '20-30대' },
+  '디스이즈게임': { category: '웹진',   gender: '혼합',    age: '20-30대' },
   '디시인사이드':{ category: '게임특화', gender: '남성중심', age: '10-30대' },
   '아카라이브': { category: '게임특화', gender: '혼합',    age: '10-20대' },
   '미니맵':    { category: '게임특화', gender: '혼합',    age: '20-30대' },
@@ -639,7 +640,7 @@ export default function Home() {
     const dayNames = ['일','월','화','수','목','금','토']
     return dayNames.map((day, i) => ({
       day,
-      웹진: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['인벤','루리웹'].includes(p.community) }).length,
+      웹진: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['인벤','루리웹','디스이즈게임'].includes(p.community) }).length,
       게임특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['디시인사이드','아카라이브','미니맵'].includes(p.community) }).length,
       유저특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['네이버카페','에펨코리아','네이트판'].includes(p.community) }).length,
     }))
@@ -663,7 +664,7 @@ export default function Home() {
     const byComm = (comms: string[]) => keywordPosts.filter(p => comms.includes(p.community) && (p.posted_at||p.collected_at||'').startsWith(ds)).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
-      웹진: byComm(['인벤','루리웹']),
+      웹진: byComm(['인벤','루리웹','디스이즈게임']),
       게임특화: byComm(['디시인사이드','아카라이브','미니맵']),
       유저특화: byComm(['네이버카페','에펨코리아','네이트판']),
     }
