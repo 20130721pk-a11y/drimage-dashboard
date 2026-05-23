@@ -279,7 +279,7 @@ export default function Home() {
       (s.title||'').toLowerCase().includes(alias.toLowerCase())
     )
     const matchStreamKw = !selectedStreamKeyword || s.tags?.includes(selectedStreamKeyword) || s.title?.includes(selectedStreamKeyword)
-    const dateVal = new Date(s.platform === '유튜브' ? (s.collected_at || s.started_at || 0) : (s.started_at || s.collected_at || 0)).getTime()
+    const dateVal = new Date(s.started_at || s.collected_at || 0).getTime()
     const dfT = new Date(df).getTime(); const dtT = new Date(dt).getTime()
     const matchDate = dateVal >= dfT && dateVal <= dtT
     return matchCat && matchPlatform && matchSearch && matchType && matchSeg && matchDate && matchStreamKw
