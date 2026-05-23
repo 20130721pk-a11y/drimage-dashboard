@@ -67,7 +67,7 @@ const GENDER_COLORS: Record<string, string> = {
 
 const SOURCE_MAP: Record<string, string> = { '구글 뉴스': 'Google News', '네이버 뉴스': '네이버 -', '네이버 블로그': '네이버블로그' }
 const COMM_KEYWORDS: Record<string, string[]> = {
-  '자사': ['드림에이지', '알케론', 'arkheron', 'Arkheron', '아키텍트', '드림에이지 아키텍트'],
+  '자사': ['드림에이지', '알케론', 'arkheron', '아키텍트', '드림에이지 아키텍트'],
   '경쟁사': ['포트나이트', '이터널리턴', '배틀그라운드', '발로란트', '리그오브레전드', '오버워치2', '에이펙스 레전드'],
 }
 
@@ -134,6 +134,15 @@ function getKSTDate(offsetDays = 0) {
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
   if (offsetDays) kst.setDate(kst.getDate() + offsetDays)
   return kst.toISOString().split('T')[0]
+
+}
+
+// timestamp → KST 날짜 문자열 (YYYY-MM-DD)
+function toKSTDateStr(ts: string | null | undefined): string {
+  if (!ts) return ''
+  try {
+    return new Date(new Date(ts).getTime() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
+  } catch { return '' }
 }
 
 export default function Home() {
@@ -287,7 +296,7 @@ export default function Home() {
 
   const COMM_SUB_KEYWORDS: Record<string,string[]> = {
     '드림에이지': ['드림에이지'],
-    '알케론': ['알케론','arkheron','Arkheron'],
+    '알케론': ['알케론','arkheron'],
     '아키텍트': ['아키텍트', '드림에이지 아키텍트'],
     '포트나이트': ['포트나이트'], '이터널리턴': ['이터널리턴'],
     '배틀그라운드': ['배틀그라운드'], '발로란트': ['발로란트'],
@@ -607,7 +616,7 @@ export default function Home() {
   const commComp7d = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byKw = (kw: string) => posts.filter(p => p.keyword===kw && (p.posted_at||p.collected_at||'').startsWith(ds)).length
+    const byKw = (kw: string) => posts.filter(p => p.keyword===kw && toKSTDateStr(p.posted_at||p.collected_at)===ds).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       포트나이트: byKw('포트나이트'),
@@ -622,11 +631,11 @@ export default function Home() {
   const commKeyword7d = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && (p.posted_at||p.collected_at||'').startsWith(ds)).length
+    const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && toKSTDateStr(p.posted_at||p.collected_at)===ds).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       드림에이지: byKw(['드림에이지']),
-      알케론: byKw(['알케론','arkheron','Arkheron']),
+      알케론: byKw(['알케론','arkheron']),
       아키텍트: byKw(['아키텍트']),
     }
   }), [posts])
@@ -666,7 +675,7 @@ export default function Home() {
   const comm7dByCat = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byComm = (comms: string[]) => keywordPosts.filter(p => comms.includes(p.community) && (p.posted_at||p.collected_at||'').startsWith(ds)).length
+    const byComm = (comms: string[]) => keywordPosts.filter(p => comms.includes(p.community) && toKSTDateStr(p.posted_at||p.collected_at)===ds).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       웹진: byComm(['인벤','루리웹','디스이즈게임']),
@@ -1818,7 +1827,7 @@ export default function Home() {
                       </div>
                     </div>
                     {(() => {
-                      const kwMap: Record<string,string[]> = {'드림에이지':['드림에이지'],'알케론':['알케론','arkheron','Arkheron'],'아키텍트':['아키텍트'],'포트나이트':['포트나이트'],'배틀그라운드':['배틀그라운드','배그'],'발로란트':['발로란트'],'이터널리턴':['이터널리턴'],'리그오브레전드':['리그오브레전드','롤']}
+                      const kwMap: Record<string,string[]> = {'드림에이지':['드림에이지'],'알케론':['알케론','arkheron'],'아키텍트':['아키텍트'],'포트나이트':['포트나이트'],'배틀그라운드':['배틀그라운드','배그'],'발로란트':['발로란트'],'이터널리턴':['이터널리턴'],'리그오브레전드':['리그오브레전드','롤']}
                       const _activeTab = Object.keys(kwMap).includes(commKwDetailTab)?commKwDetailTab:(commKeyword==='경쟁사'?'포트나이트':'드림에이지')
                       const kwPosts = dateFilteredKeywordPosts.filter(p => kwMap[_activeTab]?.some(kw=>p.keyword===kw))
                       const pos = kwPosts.filter(p=>p.sentiment==='긍정').length
