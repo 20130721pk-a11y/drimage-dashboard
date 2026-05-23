@@ -616,7 +616,7 @@ export default function Home() {
   const commComp7d = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byKw = (kw: string) => posts.filter(p => p.keyword===kw && toKSTDateStr(p.posted_at||p.collected_at)===ds).length
+    const byKw = (kw: string) => posts.filter(p => p.keyword===kw && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       포트나이트: byKw('포트나이트'),
@@ -631,7 +631,7 @@ export default function Home() {
   const commKeyword7d = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && toKSTDateStr(p.posted_at||p.collected_at)===ds).length
+    const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       드림에이지: byKw(['드림에이지']),
@@ -675,7 +675,7 @@ export default function Home() {
   const comm7dByCat = useMemo(() => Array.from({length:7}, (_, i) => {
     const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
     const ds = d.toISOString().split('T')[0]
-    const byComm = (comms: string[]) => keywordPosts.filter(p => comms.includes(p.community) && toKSTDateStr(p.posted_at||p.collected_at)===ds).length
+    const byComm = (comms: string[]) => keywordPosts.filter(p => comms.includes(p.community) && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
     return {
       date: `${d.getMonth()+1}/${d.getDate()}`,
       웹진: byComm(['인벤','루리웹','디스이즈게임']),
