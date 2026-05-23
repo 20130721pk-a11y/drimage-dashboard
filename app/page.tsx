@@ -251,8 +251,8 @@ export default function Home() {
   }
 
   const { from: df, to: dt } = getDateFilter(dateMode, selectedDate, rangeFrom, rangeTo)
-  const today = new Date().toISOString().split('T')[0]
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const today = new Date(Date.now() + 9*60*60*1000).toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() + 9*60*60*1000 - 86400000).toISOString().split('T')[0]
 
   const filteredNews = useMemo(() => news.filter(n => {
     const matchCat = category === '전체' || n.category === category
