@@ -201,7 +201,7 @@ export default function Home() {
   // 날짜 변경 시 또는 초기 로딩 완료 시 키워드 재조회
   useEffect(() => { fetchKeywords(df, dt) }, [dateMode, selectedDate, rangeFrom, rangeTo]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!loading) fetchKeywords(df, dt) }, [loading]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (activeTab === 'streams') { setDateMode('single'); setSelectedDate(getKSTDate()) } else { setDateMode('range'); setRangeFrom(getKSTDate(-7)); setRangeTo(getKSTDate()) } }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setDateMode('range'); setRangeFrom(getKSTDate(-7)); setRangeTo(getKSTDate()) }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchAll() {
     setLoading(true)
