@@ -313,7 +313,7 @@ export default function Home() {
     const matchCommKw = !selectedCommKeyword || p.title?.includes(selectedCommKeyword) || p.content?.includes(selectedCommKeyword)
     const meta = COMMUNITY_META[p.community] || { category: '', gender: '', age: '' }
     const matchCategory = commCategoryFilter === '전체' || meta.category === commCategoryFilter
-    const dateVal = new Date(p.posted_at || p.collected_at || 0).getTime()
+    const dateVal = new Date(p.collected_at || p.posted_at || 0).getTime()
     const dfT = new Date(df).getTime(); const dtT = new Date(dt).getTime()
     return matchSentiment && matchCommunity && matchSearch && matchCommKw && matchCategory && dateVal >= dfT && dateVal <= dtT
   }), [keywordPosts, commSentiment, commCommunity, commSearch, df, dt, selectedCommKeyword, commCategoryFilter])
@@ -489,7 +489,7 @@ export default function Home() {
   // 커뮤니티 통계
   const dfT = new Date(df).getTime(); const dtT = new Date(dt).getTime()
   const dateFilteredKeywordPosts = keywordPosts.filter(p => {
-    const dv = new Date(p.posted_at || p.collected_at || 0).getTime()
+    const dv = new Date(p.collected_at || p.posted_at || 0).getTime()
     return dv >= dfT && dv <= dtT
   })
   // 카테고리 필터까지 적용된 기준 (감성/채널/검색 제외)
@@ -654,9 +654,9 @@ export default function Home() {
     const dayNames = ['일','월','화','수','목','금','토']
     return dayNames.map((day, i) => ({
       day,
-      웹진: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['인벤','루리웹','디스이즈게임'].includes(p.community) }).length,
-      게임특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['디시인사이드','아카라이브','미니맵'].includes(p.community) }).length,
-      유저특화: dateFilteredKeywordPosts.filter(p => { const d=p.posted_at||p.collected_at; return d&&new Date(d).getDay()===i&&['네이버카페','에펨코리아','네이트판'].includes(p.community) }).length,
+      웹진: dateFilteredKeywordPosts.filter(p => { const d=p.collected_at||p.posted_at; return d&&new Date(new Date(d).getTime()+9*60*60*1000).getUTCDay()===i&&['인벤','루리웹','디스이즈게임'].includes(p.community) }).length,
+      게임특화: dateFilteredKeywordPosts.filter(p => { const d=p.collected_at||p.posted_at; return d&&new Date(new Date(d).getTime()+9*60*60*1000).getUTCDay()===i&&['디시인사이드','아카라이브','미니맵'].includes(p.community) }).length,
+      유저특화: dateFilteredKeywordPosts.filter(p => { const d=p.collected_at||p.posted_at; return d&&new Date(new Date(d).getTime()+9*60*60*1000).getUTCDay()===i&&['네이버카페','에펨코리아','네이트판'].includes(p.community) }).length,
     }))
   }, [dateFilteredKeywordPosts])
 
@@ -1727,8 +1727,8 @@ export default function Home() {
                   {/* 총 언급 */}
                   <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <p className="text-xs text-gray-500 mb-3">💬 총 언급</p>
-                    <p className="text-5xl font-bold text-white">{dateFilteredKeywordPosts.length}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
-                    <p className="text-xs text-gray-600 mt-2">오늘 {keywordPosts.filter(p=>(p.posted_at||p.collected_at||'').startsWith(today)).length}건</p>
+                    <p className="text-5xl font-bold text-white">{categoryFilteredPosts.length}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
+                    <p className="text-xs text-gray-600 mt-2">오늘 {keywordPosts.filter(p=>(p.collected_at||'').startsWith(today)).length}건</p>
                   </div>
 
                   {/* 감성 카드 3개 */}
@@ -1736,7 +1736,7 @@ export default function Home() {
                     <button key={s.name} onClick={() => handleCommClick(s.name)} className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700 hover:border-gray-500 transition-all text-left group">
                       <p className="text-xs text-gray-500 mb-3">{s.name==='긍정'?'😊':s.name==='부정'?'😠':'😐'} {s.name}</p>
                       <p className="text-4xl font-bold group-hover:opacity-80" style={{ color: SENTIMENT_COLORS[s.name] }}>{s.value}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
-                      <p className="text-2xl font-bold mt-1" style={{ color: SENTIMENT_COLORS[s.name] }}>{dateFilteredKeywordPosts.length>0?Math.round(s.value/dateFilteredKeywordPosts.length*100):0}<span className="text-xs font-normal">%</span></p>
+                      <p className="text-2xl font-bold mt-1" style={{ color: SENTIMENT_COLORS[s.name] }}>{categoryFilteredPosts.length>0?Math.round(s.value/categoryFilteredPosts.length*100):0}<span className="text-xs font-normal">%</span></p>
                     </button>
                   ))}
 
@@ -1791,7 +1791,7 @@ export default function Home() {
                         </div>
                         <div className="flex-shrink-0 text-right">
                           <p className="text-xs text-gray-500">{periodLabel} 수집</p>
-                          <p className="text-2xl font-bold text-indigo-400">{dateFilteredKeywordPosts.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
+                          <p className="text-2xl font-bold text-indigo-400">{categoryFilteredPosts.length}<span className="text-sm text-gray-500 ml-1">건</span></p>
                           {topPost.views>0 && <p className="text-xs text-gray-500 mt-1">👀 {topPost.views.toLocaleString()}</p>}
                         </div>
                       </div>
@@ -1948,7 +1948,7 @@ export default function Home() {
                       <button onClick={()=>setCommChannelPopup('')} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
                     </div>
                     <div className="overflow-y-auto flex-1 p-4 space-y-2">
-                      {categoryFilteredPosts.filter(p=>p.community===commChannelPopup).slice(0,50).map(p=>(
+                      {filteredPosts.filter(p=>p.community===commChannelPopup).slice(0,50).map(p=>(
                         <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" className="block p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-xs text-white line-clamp-2 flex-1">{p.title}</p>
@@ -1971,10 +1971,14 @@ export default function Home() {
                       <p className="text-xs text-gray-600">부정 급상승 키워드</p>
                     </div>
                     {(() => {
-                      const todayNeg = dateFilteredKeywordPosts.filter(p => p.sentiment === "부정")
+                      // 이슈 레이더: 항상 오늘 KST vs 어제 KST 비교 (날짜범위 선택과 무관)
+                      const todayNeg = keywordPosts.filter(p => {
+                        const ca = p.collected_at || p.posted_at || ""
+                        return p.sentiment === "부정" && ca.startsWith(today)
+                      })
                       const yestNeg = keywordPosts.filter(p => {
-                        const dv = p.posted_at || p.collected_at || ""
-                        return p.sentiment === "부정" && dv >= yesterday + "T00:00:00" && dv <= yesterday + "T23:59:59"
+                        const ca = p.collected_at || p.posted_at || ""
+                        return p.sentiment === "부정" && ca.startsWith(yesterday)
                       })
                       const exFreq = (arr: typeof posts) => {
                         const freq: Record<string,number> = {}
@@ -1995,7 +1999,7 @@ export default function Home() {
                       <p className="text-xs text-gray-600">감성 비교</p>
                     </div>
                     {(["자사","경쟁사"] as const).map(label => {
-                      const arr = posts.filter(p => { const dv=p.posted_at||p.collected_at||""; return COMM_KEYWORDS[label].some(kw=>p.keyword===kw)&&dv>=df&&dv<=dt })
+                      const arr = posts.filter(p => { const dv=p.collected_at||p.posted_at||""; return COMM_KEYWORDS[label].some(kw=>p.keyword===kw)&&dv>=df&&dv<=dt })
                       const total = arr.length || 1
                       const pos = arr.filter(p=>p.sentiment==="긍정").length
                       const neg = arr.filter(p=>p.sentiment==="부정").length
