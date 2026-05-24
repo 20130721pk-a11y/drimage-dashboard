@@ -612,7 +612,21 @@ export default function Home() {
   }).map(s=>s.channel_name).filter(Boolean))
   const newChannels = [...recentChannels].filter(c => !prevChannels.has(c))
 
-  // 경쟁사 키워드별 추이 — categoryFilteredPosts 기반, 선택 날짜 범위 동적 계산
+  // 차트 전용 기반 데이터: 서브키워드 필터 미적용, 메인 키워드 + 날짜 + 카테고리만 적용
+  // → 서브키워드 선택 시에도 비교 차트는 전체 키워드 표시
+  const baseChartPosts = useMemo(() => {
+    const allKws = COMM_KEYWORDS[commKeyword] || []
+    return posts.filter(p => {
+      if (!allKws.some(kw => p.keyword === kw)) return false
+      const dv = new Date(p.collected_at || p.posted_at || 0).getTime()
+      if (dv < dfT || dv > dtT) return false
+      const meta = COMMUNITY_META[p.community] || { category: '', gender: '', age: '' }
+      if (commCategoryFilter !== '전체' && meta.category !== commCategoryFilter) return false
+      return true
+    })
+  }, [posts, commKeyword, dfT, dtT, commCategoryFilter])
+
+  // 경쟁사 키워드별 추이 — baseChartPosts 기반, 선택 날짜 범위 동적 계산
   const commComp7d = useMemo(() => {
     const rTo = new Date(rangeTo+'T00:00:00+09:00').getTime()
     const rFrom = new Date(rangeFrom+'T00:00:00+09:00').getTime()
@@ -620,7 +634,7 @@ export default function Home() {
     return Array.from({length: n}, (_, i) => {
       const base = new Date(rFrom + i * 86400000)
       const ds = new Date(base.getTime() + 9*60*60*1000).toISOString().split('T')[0]
-      const byKw = (kw: string) => categoryFilteredPosts.filter(p => p.keyword===kw && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
+      const byKw = (kw: string) => baseChartPosts.filter(p => p.keyword===kw && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
       return {
         date: `${base.getUTCMonth()+1}/${base.getUTCDate()}`,
         포트나이트: byKw('포트나이트'),
@@ -630,7 +644,7 @@ export default function Home() {
         롤: byKw('리그오브레전드'),
       }
     })
-  }, [categoryFilteredPosts, rangeFrom, rangeTo, dateMode])
+  }, [baseChartPosts, rangeFrom, rangeTo, dateMode])
 
   // 자사 키워드별 추이 — categoryFilteredPosts 기반
   const commKeyword7d = useMemo(() => {
@@ -640,7 +654,7 @@ export default function Home() {
     return Array.from({length: n}, (_, i) => {
       const base2 = new Date(rFrom2 + i * 86400000)
       const ds = new Date(base2.getTime() + 9*60*60*1000).toISOString().split('T')[0]
-      const byKw = (kws: string[]) => categoryFilteredPosts.filter(p => kws.some(kw=>p.keyword===kw) && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
+      const byKw = (kws: string[]) => baseChartPosts.filter(p => kws.some(kw=>p.keyword===kw) && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
       return {
         date: `${base2.getUTCMonth()+1}/${base2.getUTCDate()}`,
         드림에이지: byKw(['드림에이지']),
@@ -648,7 +662,7 @@ export default function Home() {
         아키텍트: byKw(['아키텍트']),
       }
     })
-  }, [categoryFilteredPosts, rangeFrom, rangeTo, dateMode])
+  }, [baseChartPosts, rangeFrom, rangeTo, dateMode])
 
   // 최고 반응 게시물 TOP5
   const topCommPosts = useMemo(() =>
