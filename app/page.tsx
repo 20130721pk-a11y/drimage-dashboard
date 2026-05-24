@@ -617,7 +617,7 @@ export default function Home() {
   const baseChartPosts = useMemo(() => {
     const allKws = COMM_KEYWORDS[commKeyword] || []
     return posts.filter(p => {
-      if (!allKws.some(kw => p.keyword === kw)) return false
+      if (!allKws.some(kw => p.keyword === kw || p.title?.includes(kw))) return false
       const dv = new Date(p.collected_at || p.posted_at || 0).getTime()
       if (dv < dfT || dv > dtT) return false
       const meta = COMMUNITY_META[p.community] || { category: '', gender: '', age: '' }
@@ -688,7 +688,7 @@ export default function Home() {
   const commHourlyData = useMemo(() => Array.from({length:24}, (_, h) => ({
     hour: `${h}시`, h,
     count: categoryFilteredPosts.filter(p => {
-      const d = p.posted_at || p.collected_at
+      const d = p.collected_at || p.posted_at
       if (!d) return false
       const kstHour = (new Date(d).getUTCHours()+9)%24
       return kstHour === h
@@ -696,17 +696,23 @@ export default function Home() {
   })), [categoryFilteredPosts])
 
   // 커뮤니티 7일간 카테고리별 추이
-  const comm7dByCat = useMemo(() => Array.from({length:7}, (_, i) => {
-    const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
-    const ds = d.toISOString().split('T')[0]
-    const byComm = (comms: string[]) => keywordPosts.filter(p => comms.includes(p.community) && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
-    return {
-      date: `${d.getMonth()+1}/${d.getDate()}`,
-      웹진: byComm(['인벤','루리웹','디스이즈게임']),
-      게임특화: byComm(['디시인사이드','아카라이브','미니맵']),
-      유저특화: byComm(['네이버카페','에펨코리아','네이트판']),
-    }
-  }), [posts])
+  // 카테고리별 추이 — categoryFilteredPosts 기반, 선택 날짜 범위 동적 계산
+  const comm7dByCat = useMemo(() => {
+    const rFrom = new Date(rangeFrom+'T00:00:00+09:00').getTime()
+    const rTo = new Date(rangeTo+'T00:00:00+09:00').getTime()
+    const n = dateMode === 'single' ? 7 : Math.min(30, Math.max(1, Math.round((rTo - rFrom) / 86400000) + 1))
+    return Array.from({length: n}, (_, i) => {
+      const base = new Date(rFrom + i * 86400000)
+      const ds = new Date(base.getTime() + 9*60*60*1000).toISOString().split('T')[0]
+      const byComm = (comms: string[]) => categoryFilteredPosts.filter(p => comms.includes(p.community) && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
+      return {
+        date: `${base.getUTCMonth()+1}/${base.getUTCDate()}`,
+        웹진: byComm(['인벤','루리웹','디스이즈게임']),
+        게임특화: byComm(['디시인사이드','아카라이브','미니맵']),
+        유저특화: byComm(['네이버카페','에펨코리아','네이트판']),
+      }
+    })
+  }, [categoryFilteredPosts, rangeFrom, rangeTo, dateMode])
 
   const posRate = categoryFilteredPosts.length > 0 ? Math.round(sentimentCount[0].value / categoryFilteredPosts.length * 100) : 0
   const negRate = categoryFilteredPosts.length > 0 ? Math.round(sentimentCount[1].value / categoryFilteredPosts.length * 100) : 0
@@ -1717,7 +1723,7 @@ export default function Home() {
                 {/* 자사/경쟁작 토글 */}
                 <div className="flex gap-2 mb-4">
                   {Object.keys(COMM_KEYWORDS).map(kw => (
-                    <button key={kw} onClick={() => {setCommKeyword(kw);setCommSentiment('전체');setCommCommunity('전체');setCommSubKeyword('전체')}} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all border ${commKeyword===kw?'border-transparent text-white shadow-lg':'border-gray-700 text-gray-400 hover:text-white'}`} style={commKeyword===kw?{backgroundColor:kw==='자사'?'#4f46e5':'#dc2626'}:{}}>
+                    <button key={kw} onClick={() => {setCommKeyword(kw);setCommSentiment('전체');setCommCommunity('전체');setCommSubKeyword('전체');setCommKwDetailTab(kw==='자사'?'드림에이지':'포트나이트')}} className={`px-5 py-2 rounded-xl text-sm font-medium transition-all border ${commKeyword===kw?'border-transparent text-white shadow-lg':'border-gray-700 text-gray-400 hover:text-white'}`} style={commKeyword===kw?{backgroundColor:kw==='자사'?'#4f46e5':'#dc2626'}:{}}>
                       {kw === '자사' ? '🏢 자사' : '⚔️ 경쟁작'}
                     </button>
                   ))}
@@ -1752,7 +1758,7 @@ export default function Home() {
                   <div className="col-span-2 bg-gray-800 rounded-2xl p-5 border border-gray-700">
                     <p className="text-xs text-gray-500 mb-3">💬 총 언급</p>
                     <p className="text-5xl font-bold text-white">{categoryFilteredPosts.length}<span className="text-lg text-gray-500 font-normal ml-1">건</span></p>
-                    <p className="text-xs text-gray-600 mt-2">오늘 {keywordPosts.filter(p=>(p.collected_at||'').startsWith(today)).length}건</p>
+                    <p className="text-xs text-gray-600 mt-2">오늘 {categoryFilteredPosts.filter(p=>(p.collected_at||'').startsWith(today)).length}건</p>
                   </div>
 
                   {/* 감성 카드 3개 */}
@@ -1799,7 +1805,7 @@ export default function Home() {
 
                 {/* 커뮤니티 하이라이트 */}
                 {(() => {
-                  const topPost = [...dateFilteredKeywordPosts].sort((a,b)=>(b.views||0)-(a.views||0))[0]
+                  const topPost = [...categoryFilteredPosts].sort((a,b)=>{ const s=(b.views||0)+(b.comments||0)*5-(a.views||0)-(a.comments||0)*5; return s!==0?s:new Date(b.collected_at||0).getTime()-new Date(a.collected_at||0).getTime() })[0]
                   if (!topPost) return null
                   return (
                     <div className="mb-6 rounded-2xl overflow-hidden border border-indigo-500/30 bg-gradient-to-r from-indigo-950/80 via-gray-900 to-gray-900 p-5">
@@ -1853,7 +1859,7 @@ export default function Home() {
                     {(() => {
                       const kwMap: Record<string,string[]> = {'드림에이지':['드림에이지'],'알케론':['알케론','arkheron'],'아키텍트':['아키텍트'],'포트나이트':['포트나이트'],'배틀그라운드':['배틀그라운드','배그'],'발로란트':['발로란트'],'이터널리턴':['이터널리턴'],'리그오브레전드':['리그오브레전드','롤']}
                       const _activeTab = Object.keys(kwMap).includes(commKwDetailTab)?commKwDetailTab:(commKeyword==='경쟁사'?'포트나이트':'드림에이지')
-                      const kwPosts = dateFilteredKeywordPosts.filter(p => kwMap[_activeTab]?.some(kw=>p.keyword===kw))
+                      const kwPosts = categoryFilteredPosts.filter(p => kwMap[_activeTab]?.some(kw=>p.keyword===kw))
                       const pos = kwPosts.filter(p=>p.sentiment==='긍정').length
                       const neg = kwPosts.filter(p=>p.sentiment==='부정').length
                       const neu = kwPosts.filter(p=>p.sentiment==='중립').length
@@ -2055,7 +2061,7 @@ export default function Home() {
                     </div>
                     <div className="space-y-2.5">
                       {Object.keys(COMMUNITY_COLORS).map(comm => {
-                        const cp = dateFilteredKeywordPosts.filter(p=>p.community===comm)
+                        const cp = categoryFilteredPosts.filter(p=>p.community===comm)
                         const stops = ["드림에이지","알케론","arkheron","아키텍트","포트나이트","배틀그라운드","발로란트","이터널리턴","리그오브레전드","오버워치","에이펙스","게임","방송","fortnite","valorant","pubg"]
                         const freq: Record<string,number> = {}
                         cp.forEach(p => { (p.title||"").match(/[가-힣]{2,}/g)?.forEach(w => { if(!stops.some(s=>w.includes(s))) freq[w]=(freq[w]||0)+1 }) })
@@ -2083,8 +2089,8 @@ export default function Home() {
                       <p className="text-xs text-gray-600">반응 게시물 기준</p>
                     </div>
                     {(() => {
-                      const viral = [...dateFilteredKeywordPosts].filter(p=>(p.views||0)>0||(p.comments||0)>0).sort((a,b)=>((b.views||0)+(b.comments||0)*5)-((a.views||0)+(a.comments||0)*5)).slice(0,4)
-                      const noReact = dateFilteredKeywordPosts.filter(p=>(p.views||0)===0&&(p.comments||0)===0).length
+                      const viral = [...categoryFilteredPosts].filter(p=>(p.views||0)>0||(p.comments||0)>0).sort((a,b)=>((b.views||0)+(b.comments||0)*5)-((a.views||0)+(a.comments||0)*5)).slice(0,4)
+                      const noReact = categoryFilteredPosts.filter(p=>(p.views||0)===0&&(p.comments||0)===0).length
                       return (
                         <>
                           <div className="flex gap-3 mb-3">
@@ -2160,7 +2166,7 @@ export default function Home() {
                       <div className="flex items-center gap-2 mt-2">
                         {item.views > 0 && <span className="text-xs text-gray-700">👀 {item.views.toLocaleString()}</span>}
                         {item.comments > 0 && <span className="text-xs text-gray-700">💬 {item.comments.toLocaleString()}</span>}
-                        <span className="text-xs text-gray-700 ml-auto">{item.collected_at ? new Date(item.collected_at).toLocaleDateString('ko-KR') : ''}</span>
+                        <span className="text-xs text-gray-700 ml-auto">{item.collected_at ? toKSTDateStr(item.collected_at) : ''}</span>
                       </div>
                     </a>
                   ))}
