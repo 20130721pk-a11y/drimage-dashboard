@@ -159,7 +159,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [dateMode, setDateMode] = useState<'single' | 'range'>('range')
   const [selectedDate, setSelectedDate] = useState(getKSTDate())
-  const [rangeFrom, setRangeFrom] = useState(() => getKSTDate(-7))
+  const [rangeFrom, setRangeFrom] = useState(() => getKSTDate(-6))
   const [rangeTo, setRangeTo] = useState(getKSTDate())
   const [category, setCategory] = useState('전체')
   const [segment, setSegment] = useState('')
@@ -201,7 +201,7 @@ export default function Home() {
   // 날짜 변경 시 또는 초기 로딩 완료 시 키워드 재조회
   useEffect(() => { fetchKeywords(df, dt) }, [dateMode, selectedDate, rangeFrom, rangeTo]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!loading) fetchKeywords(df, dt) }, [loading]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { setDateMode('range'); setRangeFrom(getKSTDate(-7)); setRangeTo(getKSTDate()) }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setDateMode('range'); setRangeFrom(getKSTDate(-6)); setRangeTo(getKSTDate()) }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchAll() {
     setLoading(true)
@@ -612,33 +612,43 @@ export default function Home() {
   }).map(s=>s.channel_name).filter(Boolean))
   const newChannels = [...recentChannels].filter(c => !prevChannels.has(c))
 
-  // 경쟁사 키워드별 7일 추이
-  const commComp7d = useMemo(() => Array.from({length:7}, (_, i) => {
-    const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
-    const ds = d.toISOString().split('T')[0]
-    const byKw = (kw: string) => posts.filter(p => p.keyword===kw && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
-    return {
-      date: `${d.getMonth()+1}/${d.getDate()}`,
-      포트나이트: byKw('포트나이트'),
-      이터널리턴: byKw('이터널리턴'),
-      배틀그라운드: byKw('배틀그라운드'),
-      발로란트: byKw('발로란트'),
-      롤: byKw('리그오브레전드'),
-    }
-  }), [posts])
+  // 경쟁사 키워드별 추이 — categoryFilteredPosts 기반, 선택 날짜 범위 동적 계산
+  const commComp7d = useMemo(() => {
+    const rTo = new Date(rangeTo+'T00:00:00+09:00').getTime()
+    const rFrom = new Date(rangeFrom+'T00:00:00+09:00').getTime()
+    const n = dateMode === 'single' ? 7 : Math.min(30, Math.max(1, Math.round((rTo - rFrom) / 86400000) + 1))
+    return Array.from({length: n}, (_, i) => {
+      const base = new Date(rFrom + i * 86400000)
+      const ds = new Date(base.getTime() + 9*60*60*1000).toISOString().split('T')[0]
+      const byKw = (kw: string) => categoryFilteredPosts.filter(p => p.keyword===kw && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
+      return {
+        date: `${base.getUTCMonth()+1}/${base.getUTCDate()}`,
+        포트나이트: byKw('포트나이트'),
+        이터널리턴: byKw('이터널리턴'),
+        배틀그라운드: byKw('배틀그라운드'),
+        발로란트: byKw('발로란트'),
+        롤: byKw('리그오브레전드'),
+      }
+    })
+  }, [categoryFilteredPosts, rangeFrom, rangeTo, dateMode])
 
-  // 자사 키워드별 7일 추이
-  const commKeyword7d = useMemo(() => Array.from({length:7}, (_, i) => {
-    const d = new Date(Date.now() + 9*60*60*1000); d.setDate(d.getDate()-(6-i))
-    const ds = d.toISOString().split('T')[0]
-    const byKw = (kws: string[]) => posts.filter(p => kws.some(kw=>p.keyword===kw) && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
-    return {
-      date: `${d.getMonth()+1}/${d.getDate()}`,
-      드림에이지: byKw(['드림에이지']),
-      알케론: byKw(['알케론','arkheron']),
-      아키텍트: byKw(['아키텍트']),
-    }
-  }), [posts])
+  // 자사 키워드별 추이 — categoryFilteredPosts 기반
+  const commKeyword7d = useMemo(() => {
+    const rTo2 = new Date(rangeTo+'T00:00:00+09:00').getTime()
+    const rFrom2 = new Date(rangeFrom+'T00:00:00+09:00').getTime()
+    const n = dateMode === 'single' ? 7 : Math.min(30, Math.max(1, Math.round((rTo2 - rFrom2) / 86400000) + 1))
+    return Array.from({length: n}, (_, i) => {
+      const base2 = new Date(rFrom2 + i * 86400000)
+      const ds = new Date(base2.getTime() + 9*60*60*1000).toISOString().split('T')[0]
+      const byKw = (kws: string[]) => categoryFilteredPosts.filter(p => kws.some(kw=>p.keyword===kw) && toKSTDateStr(p.collected_at||p.posted_at)===ds).length
+      return {
+        date: `${base2.getUTCMonth()+1}/${base2.getUTCDate()}`,
+        드림에이지: byKw(['드림에이지']),
+        알케론: byKw(['알케론','arkheron']),
+        아키텍트: byKw(['아키텍트']),
+      }
+    })
+  }, [categoryFilteredPosts, rangeFrom, rangeTo, dateMode])
 
   // 최고 반응 게시물 TOP5
   const topCommPosts = useMemo(() =>
@@ -710,7 +720,7 @@ export default function Home() {
               <button onClick={() => setDateMode('range')} className={`text-xs px-2 py-1 rounded ${dateMode==='range' ? 'bg-gray-600 text-white' : 'text-gray-500'}`}>기간</button>
             </div>
             {['오늘','3일간','7일간'].map((label, i) => {
-              const days = [0, 3, 7][i]
+              const days = [0, 2, 6][i]  // 오늘 포함 3일=days2, 7일=days6
               return (
                 <button key={label} onClick={() => {
                   const t = getKSTDate()
